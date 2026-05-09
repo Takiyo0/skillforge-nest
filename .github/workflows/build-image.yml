@@ -1,4 +1,4 @@
-name: Build and Publish Image
+name: Build, Push Image and Deploy
 
 on:
   push:
@@ -9,7 +9,10 @@ env:
 
 jobs:
   build:
+    name: Build & Push Image
     runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check_build.outputs.is_build }}
     steps:
       - uses: actions/checkout@v2
 
@@ -56,3 +59,41 @@ jobs:
       - name: Skip push (no release prefix)
         if: steps.check_build.outputs.is_build == 'false'
         run: echo "Skipping Docker push due to commit message does not start with 'build:'"
+
+  deploy-portainer:
+    name: Deploy to Kyoko-SG-001 via Portainer
+    runs-on: ubuntu-latest
+    needs: build
+    if: needs.build.outputs.should_build == 'true'
+    environment: PRODUCTION
+    steps:
+      - name: Trigger Portainer Redeploy
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            -H "CF-Access-Client-Id: ${{ secrets.PORTAINER_SF_NEST_CLIENT_ID }}" \
+            -H "CF-Access-Client-Secret: ${{ secrets.PORTAINER_SF_NEST_CLIENT_SECRET }}" \
+            "${{ secrets.PORTAINER_SF_NEST_WEBHOOK }}")
+          echo "Webhook response: $STATUS"
+          if [ "$STATUS" != "204" ]; then
+            echo "::error::Failed ($STATUS)"
+            exit 1
+          fi
+
+  notify:
+    name: Deployment Info
+    runs-on: ubuntu-latest
+    needs: [ build, deploy-portainer ]
+    if: always() && needs.build.outputs.should_build == 'true'
+    environment:
+      name: PRODUCTION
+      url: ${{ vars.APP_URL }}
+    steps:
+      - name: Write deployment summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Target | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Kyoko-SG-001 | ${{ needs.deploy-portainer.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image** | \`${{ env.IMAGE_NAME }}:${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **App URL** | [${{ vars.APP_URL }}](${{ vars.APP_URL }}) |" >> $GITHUB_STEP_SUMMARY
