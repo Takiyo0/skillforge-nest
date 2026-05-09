@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SubmissionsController } from './submissions.controller';
 import { SubmissionsService } from './submissions.service';
 import { AiReviewService } from './ai-review/ai-review.service';
+import { AiProviderFactory } from './ai-review/providers';
 import { PistonService } from './piston/piston.service';
 import {
   CodeSubmission,
@@ -25,7 +26,7 @@ import {
     ]),
   ],
   controllers: [SubmissionsController],
-  providers: [SubmissionsService, PistonService, AiReviewService],
+  providers: [SubmissionsService, PistonService, AiReviewService, AiProviderFactory],
   exports: [PistonService, AiReviewService, SubmissionsService],
 })
 export class SubmissionsModule {}
