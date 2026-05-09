@@ -1,13 +1,10 @@
 -- SkillForge PostgreSQL DDL
 -- Generated: 2026-04-06
 
-REASSIGN
-OWNED BY takiyo TO skillforge;
-
 BEGIN;
 
 CREATE
-EXTENSION IF NOT EXISTS pgcrypto;
+    EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ===== Enums =====
 CREATE TYPE user_role AS ENUM ('learner', 'instructor', 'admin');
@@ -30,16 +27,16 @@ CREATE TYPE onboarding_question_type AS ENUM ('multiple_choice', 'single_choice'
 
 -- ===== Utility =====
 CREATE
-OR REPLACE FUNCTION set_updated_at()
+    OR REPLACE FUNCTION set_updated_at()
     RETURNS TRIGGER AS
 $$
 BEGIN
     NEW.updated_at
-= NOW();
-RETURN NEW;
+        = NOW();
+    RETURN NEW;
 END;
 $$
-LANGUAGE plpgsql;
+    LANGUAGE plpgsql;
 
 -- ===== Learning paths, Identity, auth, profile, gamification =====
 CREATE TABLE learning_paths
@@ -351,8 +348,8 @@ CREATE TABLE quiz_attempts
 CREATE TABLE quiz_attempt_answers
 (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    attempt_id          UUID NOT NULL REFERENCES quiz_attempts (id) ON DELETE CASCADE,
-    question_id         UUID NOT NULL REFERENCES quiz_questions (id) ON DELETE CASCADE,
+    attempt_id          UUID   NOT NULL REFERENCES quiz_attempts (id) ON DELETE CASCADE,
+    question_id         UUID   NOT NULL REFERENCES quiz_questions (id) ON DELETE CASCADE,
     selected_option_ids UUID[] NOT NULL  DEFAULT '{}',
     answer_text         TEXT,
     is_correct          BOOLEAN,
@@ -680,60 +677,60 @@ CREATE TRIGGER trg_users_updated_at
     BEFORE UPDATE
     ON users
     FOR EACH ROW
-    EXECUTE FUNCTION set_updated_at();
+EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_user_preferences_updated_at
     BEFORE UPDATE
     ON user_preferences
     FOR EACH ROW
-    EXECUTE FUNCTION set_updated_at();
+EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_courses_updated_at
     BEFORE UPDATE
     ON courses
     FOR EACH ROW
-    EXECUTE FUNCTION set_updated_at();
+EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_units_updated_at
     BEFORE UPDATE
     ON units
     FOR EACH ROW
-    EXECUTE FUNCTION set_updated_at();
+EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_ai_review_jobs_updated_at
     BEFORE UPDATE
     ON ai_review_jobs
     FOR EACH ROW
-    EXECUTE FUNCTION set_updated_at();
+EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_unit_progress_updated_at
     BEFORE UPDATE
     ON unit_progress
     FOR EACH ROW
-    EXECUTE FUNCTION set_updated_at();
+EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_course_progress_updated_at
     BEFORE UPDATE
     ON course_progress
     FOR EACH ROW
-    EXECUTE FUNCTION set_updated_at();
+EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_user_daily_streaks_updated_at
     BEFORE UPDATE
     ON user_daily_streaks
     FOR EACH ROW
-    EXECUTE FUNCTION set_updated_at();
+EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_forum_posts_updated_at
     BEFORE UPDATE
     ON forum_posts
     FOR EACH ROW
-    EXECUTE FUNCTION set_updated_at();
+EXECUTE FUNCTION set_updated_at();
 
 CREATE TRIGGER trg_forum_replies_updated_at
     BEFORE UPDATE
     ON forum_replies
     FOR EACH ROW
-    EXECUTE FUNCTION set_updated_at();
+EXECUTE FUNCTION set_updated_at();
 
 COMMIT;

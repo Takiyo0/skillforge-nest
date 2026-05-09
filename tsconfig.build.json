@@ -6,6 +6,7 @@
     "dist",
     "**/*spec.ts",
     "libs",
-    "apps"
+    "apps",
+    "docs"
   ]
 }
