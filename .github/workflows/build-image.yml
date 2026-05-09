@@ -11,6 +11,7 @@ jobs:
   build:
     name: Build & Push Image
     runs-on: ubuntu-latest
+    environment: PRODUCTION
     outputs:
       should_build: ${{ steps.check_build.outputs.is_build }}
     steps:
@@ -43,6 +44,9 @@ jobs:
         with:
           context: .
           push: true
+          build-args: |
+            VITE_BASE_API=${{ vars.VITE_BASE_API }}
+            VITE_BASE_S3=${{ vars.VITE_BASE_S3 }}
           tags: |
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
@@ -64,8 +68,8 @@ jobs:
     name: Deploy to Kyoko-SG-001 via Portainer
     runs-on: ubuntu-latest
     needs: build
-    if: needs.build.outputs.should_build == 'true'
     environment: PRODUCTION
+    if: needs.build.outputs.should_build == 'true'
     steps:
       - name: Trigger Portainer Redeploy
         run: |

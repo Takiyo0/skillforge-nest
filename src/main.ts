@@ -26,14 +26,31 @@ async function bootstrap() {
     ]);
   }
   const app = await NestFactory.create(AppModule, {
-    cors: true,
+    cors: process.env.NODE_ENV !== 'production',
     logger: ['error', 'warn', 'log'],
   });
 
   app.setGlobalPrefix('api/v1');
 
   // helmet for secure headers
-  app.use(helmet());
+    app.use(helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: [
+                    "'self'",
+                    'https://static.cloudflareinsights.com',
+                ],
+                styleSrc: ["'self'", 'https:', "'unsafe-inline'"],
+                imgSrc: [
+                    "'self'",
+                    'data:',
+                    'https://cdn-sf-apac.takiyo.us',
+                ],
+                fontSrc: ["'self'", 'https:', 'data:'],
+            },
+        },
+    }));
 
   const limiter = rateLimit({
     windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 10 * 1000, // 10 seconds
@@ -69,8 +86,8 @@ async function bootstrap() {
   );
 
   const allowedOrigins = (
-    process.env.CORS_ALLOWED_ORIGINS ||
-    'http://localhost:6567,http://localhost:8293'
+      process.env.CORS_ALLOWED_ORIGINS ||
+      'http://localhost:6567,http://localhost:8293'
   ).split(',');
   app.enableCors({
     origin: (origin, callback) => {

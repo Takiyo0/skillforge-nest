@@ -32,6 +32,10 @@ RUN npm run build
 
 FROM node:20-alpine
 
+LABEL org.opencontainers.image.description="This is an image for the SkillForge Nest application." \
+org.opencontainers.image.title="SkillForge Nest" \
+org.opencontainers.image.vendor=SkillForge
+
 WORKDIR /app
 RUN apk add --no-cache dumb-init
 
