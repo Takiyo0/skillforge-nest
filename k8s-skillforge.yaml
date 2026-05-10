@@ -58,6 +58,7 @@ spec:
       sectionName: websecure
   hostnames:
     - "skillforge.mika.kivotos.top"
+    - "skillforge.takiyo.us"
   rules:
     - matches:
         - path:
