@@ -14,8 +14,15 @@ jobs:
     environment: PRODUCTION
     outputs:
       should_build: ${{ steps.check_build.outputs.is_build }}
+    permissions:
+      contents: write
+      packages: write
+      deployments: write
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: true
 
       - name: Check commit message for build prefix
         id: check_build
@@ -60,6 +67,20 @@ jobs:
             org.opencontainers.image.vendor=SkillForge
             org.opencontainers.image.authors=${{ github.actor }}
 
+      - name: Update image tag in k8s-skillforge.yaml
+        if: steps.check_build.outputs.is_build == 'true'
+        run: |
+          sed -i "s|image: ghcr.io/takiyo0/skillforge-nest:.*|image: ${{ env.IMAGE_NAME }}:${{ github.sha }}|" \
+            k8s-skillforge.yaml
+
+      - name: Commit changes
+        if: steps.check_build.outputs.is_build == 'true'
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Update image tag to ${{ env.IMAGE_NAME }}:${{ github.sha }} [skip ci]"
+          branch: ${{ github.ref_name }}
+          file_pattern: k8s-skillforge.yaml
+
       - name: Skip push (no release prefix)
         if: steps.check_build.outputs.is_build == 'false'
         run: echo "Skipping Docker push due to commit message does not start with 'build:'"
@@ -84,10 +105,36 @@ jobs:
             exit 1
           fi
 
+  deploy-kivotos-k8s:
+    name: Deploy to Kivotos Cluster via ArgoCD
+    runs-on: ubuntu-latest
+    needs: build
+    environment: PRODUCTION
+    if: needs.build.outputs.should_build == 'true'
+    steps:
+      - name: Trigger ArgoCD Resync
+        env:
+          WEBHOOK_SECRET: ${{ secrets.ARGOCD_WEBHOOK_SECRET_HMAC }}
+        run: |
+          PAYLOAD='{"repository":{"html_url":"https://github.com/takiyo0/skillforge-nest","full_name":"takiyo0/skillforge-nest"},"ref":"refs/heads/master"}'
+          SIGNATURE="sha256=$WEBHOOK_SECRET"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Event: push" \
+            -H "X-Hub-Signature-256: $SIGNATURE" \
+            -d "$PAYLOAD" \
+            "${{ vars.ARGOCD_API_SERVER }}/api/webhook")
+          echo "ArgoCD response: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::Failed ($STATUS)"
+            exit 1
+          fi
+
   notify:
     name: Deployment Info
     runs-on: ubuntu-latest
-    needs: [ build, deploy-portainer ]
+    needs: [ build, deploy-portainer, deploy-kivotos-k8s ]
     if: always() && needs.build.outputs.should_build == 'true'
     environment:
       name: PRODUCTION
@@ -99,5 +146,6 @@ jobs:
           echo "| Target | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
           echo "| Kyoko-SG-001 | ${{ needs.deploy-portainer.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Kivotos K8s | ${{ needs.deploy-kivotos-k8s.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Image** | \`${{ env.IMAGE_NAME }}:${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **App URL** | [${{ vars.APP_URL }}](${{ vars.APP_URL }}) |" >> $GITHUB_STEP_SUMMARY
