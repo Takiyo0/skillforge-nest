@@ -6,10 +6,12 @@ import {
   MaxLength,
   IsInt,
   Min, IsBoolean,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { ChallengeDifficulty } from '../../entities/exercise.entity';
+import { SUPPORTED_CODE_LANGUAGES } from '../../common/constants/supported-languages';
 
 export class CreateExerciseDto {
   @ApiProperty({
@@ -38,9 +40,11 @@ export class CreateExerciseDto {
   @ApiProperty({
     description: 'Programming language (maximum 40 characters)',
     maximum: 40,
+    enum: SUPPORTED_CODE_LANGUAGES,
   })
   @IsString()
   @MaxLength(40)
+  @IsIn(SUPPORTED_CODE_LANGUAGES)
   language: string;
 
   @ApiProperty({
@@ -107,11 +111,13 @@ export class UpdateExerciseDto {
   @ApiProperty({
     description: 'Programming language',
     maximum: 40,
+    enum: SUPPORTED_CODE_LANGUAGES,
     required: false,
   })
   @IsOptional()
   @IsString()
   @MaxLength(40)
+  @IsIn(SUPPORTED_CODE_LANGUAGES)
   language?: string;
 
   @ApiProperty({

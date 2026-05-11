@@ -138,10 +138,17 @@ export class AdminCoursesService {
         });
     }
 
-    async getCourseById(courseId: string, userOrUserId?: any): Promise<Course> {
+    async getCourseById(courseId: string, userOrUserId?: any): Promise<any> {
         const course = await this.courseRepository.findOne({
             where: {id: courseId},
-            relations: ['units', 'creator'],
+            relations: [
+                'units',
+                'creator',
+                'units.prerequisites',
+                'units.prerequisites.prerequisiteUnit',
+                'units.requiredFor',
+                'units.requiredFor.unit',
+            ],
         });
 
         if (!course) {
@@ -152,7 +159,28 @@ export class AdminCoursesService {
             ensureOwnerOrAdmin(course.createdBy, userOrUserId);
         }
 
-        return course;
+        return {
+            ...course,
+            units: (course.units || []).map((unit) => ({
+                id: unit.id,
+                title: unit.title,
+                type: unit.type,
+                position: unit.position,
+                isPublished: unit.isPublished,
+                prerequisites: (unit.prerequisites || []).map((p: any) => ({
+                    id: p.prerequisiteUnit?.id,
+                    title: p.prerequisiteUnit?.title,
+                    type: p.prerequisiteUnit?.type,
+                    position: p.prerequisiteUnit?.position,
+                })).filter((p: any) => p.id),
+                requiredFor: (unit.requiredFor || []).map((r: any) => ({
+                    id: r.unit?.id,
+                    title: r.unit?.title,
+                    type: r.unit?.type,
+                    position: r.unit?.position,
+                })).filter((r: any) => r.id),
+            })),
+        };
     }
 
     private generateSlug(title: string): string {

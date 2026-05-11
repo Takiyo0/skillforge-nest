@@ -252,7 +252,7 @@ CREATE TABLE units
     is_published      BOOLEAN      NOT NULL DEFAULT FALSE,
     created_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at        TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    UNIQUE (course_id, position),
+--     UNIQUE (course_id, position),
     CHECK (position > 0)
 );
 
@@ -407,27 +407,28 @@ CREATE TABLE exercise_attempt_counters
 -- ===== Submissions, Judge0, AI review, polling =====
 CREATE TABLE code_submissions
 (
-    id             UUID PRIMARY KEY           DEFAULT gen_random_uuid(),
-    user_id        UUID              NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    course_id      UUID              NOT NULL REFERENCES courses (id) ON DELETE CASCADE,
-    unit_id        UUID              NOT NULL REFERENCES units (id) ON DELETE CASCADE,
-    exercise_id    UUID              REFERENCES exercises (id) ON DELETE SET NULL,
-    kind           submission_kind   NOT NULL,
-    status         submission_status NOT NULL DEFAULT 'queued',
-    language       VARCHAR(40)       NOT NULL,
-    source_code    TEXT              NOT NULL,
-    attempt_number INTEGER           NOT NULL,
-    queue_name     VARCHAR(60)       NOT NULL DEFAULT 'default',
-    judge0_token   VARCHAR(120),
-    stdout         TEXT,
-    stderr         TEXT,
-    compile_output TEXT,
-    ai_summary     TEXT,
-    ai_score       NUMERIC(5, 2),
-    ai_model       VARCHAR(120),
-    queued_at      TIMESTAMPTZ       NOT NULL DEFAULT NOW(),
-    started_at     TIMESTAMPTZ,
-    finished_at    TIMESTAMPTZ
+    id                  UUID PRIMARY KEY           DEFAULT gen_random_uuid(),
+    user_id             UUID              NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    course_id           UUID              NOT NULL REFERENCES courses (id) ON DELETE CASCADE,
+    unit_id             UUID              NOT NULL REFERENCES units (id) ON DELETE CASCADE,
+    exercise_id         UUID              REFERENCES exercises (id) ON DELETE SET NULL,
+    kind                submission_kind   NOT NULL,
+    status              submission_status NOT NULL DEFAULT 'queued',
+    language            VARCHAR(40)       NOT NULL,
+    source_code         TEXT              NOT NULL,
+    attempt_number      INTEGER           NOT NULL,
+    queue_name          VARCHAR(60)       NOT NULL DEFAULT 'default',
+    ai_code_explanation TEXT,
+    judge0_token        VARCHAR(120),
+    stdout              TEXT,
+    stderr              TEXT,
+    compile_output      TEXT,
+    ai_summary          TEXT,
+    ai_score            NUMERIC(5, 2),
+    ai_model            VARCHAR(120),
+    queued_at           TIMESTAMPTZ       NOT NULL DEFAULT NOW(),
+    started_at          TIMESTAMPTZ,
+    finished_at         TIMESTAMPTZ
 );
 
 CREATE TABLE submission_test_results

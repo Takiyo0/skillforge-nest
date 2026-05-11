@@ -88,6 +88,33 @@ export class CoursesService {
     private s3Service: S3Service,
   ) {}
 
+  private stringSeed(input: string): number {
+    let hash = 2166136261;
+    for (let i = 0; i < input.length; i++) {
+      hash ^= input.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
+  private seededRandom(seed: number): () => number {
+    let state = seed || 1;
+    return () => {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      return state / 4294967296;
+    };
+  }
+
+  private deterministicShuffle<T>(items: T[], seedKey: string): T[] {
+    const result = [...items];
+    const rand = this.seededRandom(this.stringSeed(seedKey));
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+  }
+
   async listCourses(dto: ListCoursesDto, userId?: string) {
     const search = dto.search;
     const level = dto.level;
@@ -475,6 +502,39 @@ export class CoursesService {
             optionsByQuestionId.set(option.questionId, list);
           });
 
+          let questionPayload = questions.map((question) => {
+            const questionOptions = optionsByQuestionId.get(question.id) || [];
+            const orderedOptions = quiz.randomizeOptions
+              ? this.deterministicShuffle(
+                  questionOptions,
+                  `${userId || 'anon'}:${quiz.id}:${question.id}:options`,
+                )
+              : questionOptions;
+            const correctOptionsCount = orderedOptions.filter(
+              (o) => o.isCorrect,
+            ).length;
+            return {
+              id: question.id,
+              questionType: question.questionType,
+              prompt: question.prompt,
+              explanation: question.explanation,
+              points: Number(question.points),
+              position: question.position,
+              answerMultiple: correctOptionsCount > 1,
+              options: orderedOptions.map((option) => ({
+                id: option.id,
+                label: option.label,
+              })),
+            };
+          });
+
+          if (quiz.randomizeQuestions) {
+            questionPayload = this.deterministicShuffle(
+              questionPayload,
+              `${userId || 'anon'}:${quiz.id}:questions`,
+            );
+          }
+
           quizDetail = {
             id: quiz.id,
             title: quiz.title,
@@ -484,26 +544,7 @@ export class CoursesService {
             randomizeQuestions: quiz.randomizeQuestions,
             randomizeOptions: quiz.randomizeOptions,
             createdAt: quiz.createdAt,
-            questions: questions.map((question) => {
-              const questionOptions =
-                optionsByQuestionId.get(question.id) || [];
-              const correctOptionsCount = questionOptions.filter(
-                (o) => o.isCorrect,
-              ).length;
-              return {
-                id: question.id,
-                questionType: question.questionType,
-                prompt: question.prompt,
-                explanation: question.explanation,
-                points: Number(question.points),
-                position: question.position,
-                answerMultiple: correctOptionsCount > 1,
-                options: questionOptions.map((option) => ({
-                  id: option.id,
-                  label: option.label,
-                })),
-              };
-            }),
+            questions: questionPayload,
           };
         }
 
@@ -532,6 +573,7 @@ export class CoursesService {
               status: submission.status,
               aiScore: submission.aiScore,
               aiSummary: submission.aiSummary,
+              aiCodeExplanation: submission.aiCodeExplanation,
               testsPassed,
               testsFailed,
               stdout: submission.stdout,
@@ -608,9 +650,22 @@ export class CoursesService {
                   optionsByQuestionId.set(option.questionId, list);
                 });
 
-                quizQuestions.forEach((q) => {
+                const orderedQuestions = quiz.randomizeQuestions
+                  ? this.deterministicShuffle(
+                      quizQuestions,
+                      `${userId || 'anon'}:${quiz.id}:final:questions`,
+                    )
+                  : quizQuestions;
+
+                orderedQuestions.forEach((q) => {
                   const questionOptions = optionsByQuestionId.get(q.id) || [];
-                  const correctOptionsCount = questionOptions.filter(
+                  const orderedOptions = quiz.randomizeOptions
+                    ? this.deterministicShuffle(
+                        questionOptions,
+                        `${userId || 'anon'}:${quiz.id}:${q.id}:final:options`,
+                      )
+                    : questionOptions;
+                  const correctOptionsCount = orderedOptions.filter(
                     (o) => o.isCorrect,
                   ).length;
                   questions.push({
@@ -621,7 +676,7 @@ export class CoursesService {
                     points: Number(q.points),
                     position: q.position,
                     answerMultiple: correctOptionsCount > 1,
-                    options: questionOptions.map((option) => ({
+                    options: orderedOptions.map((option) => ({
                       id: option.id,
                       label: option.label,
                     })),
@@ -773,6 +828,7 @@ export class CoursesService {
     if (inProgressAttempt) {
       // resume existing attempt
       return this.getExamAttemptWithQuestions(
+        userId,
         unitId,
         inProgressAttempt.id,
         inProgressAttempt.attemptNumber,
@@ -800,6 +856,7 @@ export class CoursesService {
       }
       // reuse failed attempt
       return this.getExamAttemptWithQuestions(
+        userId,
         unitId,
         lastSubmittedAttempt.id,
         lastSubmittedAttempt.attemptNumber,
@@ -829,6 +886,7 @@ export class CoursesService {
     await this.finalExamAttemptRepository.save(attempt);
 
     return this.getExamAttemptWithQuestions(
+      userId,
       unitId,
       attempt.id,
       attempt.attemptNumber,
@@ -837,6 +895,7 @@ export class CoursesService {
   }
 
   private async getExamAttemptWithQuestions(
+    userId: string,
     unitId: string,
     attemptId: string,
     attemptNumber: number,
@@ -865,8 +924,9 @@ export class CoursesService {
 
     for (const component of quizComponents) {
       if (component.quiz) {
+        const quizRef = component.quiz;
         const quizQuestions = await this.quizQuestionRepository.find({
-          where: { quizId: component.quiz.id },
+          where: { quizId: quizRef.id },
           order: { position: 'ASC' },
         });
 
@@ -885,9 +945,22 @@ export class CoursesService {
           );
         });
 
-        quizQuestions.forEach((q) => {
+        const orderedQuestions = quizRef.randomizeQuestions
+          ? this.deterministicShuffle(
+              quizQuestions,
+              `${userId}:${quizRef.id}:attempt:questions`,
+            )
+          : quizQuestions;
+
+        orderedQuestions.forEach((q) => {
           const questionOptions = optionsByQuestionId.get(q.id) || [];
-          const correctOptionsCount = questionOptions.filter(
+          const orderedOptions = quizRef.randomizeOptions
+            ? this.deterministicShuffle(
+                questionOptions,
+                `${userId}:${quizRef.id}:${q.id}:attempt:options`,
+              )
+            : questionOptions;
+          const correctOptionsCount = orderedOptions.filter(
             (o) => o.isCorrect,
           ).length;
           questions.push({
@@ -898,7 +971,7 @@ export class CoursesService {
             points: Number(q.points),
             position: q.position,
             answerMultiple: correctOptionsCount > 1,
-            options: questionOptions.map((option) => ({
+            options: orderedOptions.map((option) => ({
               id: option.id,
               label: option.label,
             })),

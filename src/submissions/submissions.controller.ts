@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards, Req } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -15,6 +15,20 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @ApiBearerAuth('access-token')
 export class SubmissionsController {
   constructor(private readonly submissionsService: SubmissionsService) {}
+
+  @Get('languages')
+  @ApiOperation({
+    summary: 'Get supported code sandbox languages',
+    description:
+      'Returns supported languages. Pass includeBaseCode=true to include starter templates.',
+  })
+  async getSandboxLanguages(
+    @Query('includeBaseCode') includeBaseCode?: string,
+  ) {
+    const include =
+      String(includeBaseCode || '').toLowerCase() === 'true';
+    return this.submissionsService.getSandboxLanguages(include);
+  }
 
   @Get('unit/:unitId')
   @ApiOperation({
@@ -164,5 +178,54 @@ export class SubmissionsController {
       submissionId,
       req.user.userId,
     );
+  }
+
+  @Post(':submissionId/ai-explanation')
+  @ApiOperation({
+    summary: 'Ask AI what is wrong with this submission',
+    description:
+      'Generates and stores one AI explanation for a submission. Repeated calls return the stored explanation without re-generating.',
+  })
+  @ApiParam({
+    name: 'submissionId',
+    description: 'Unique identifier of the submission',
+    type: 'string',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'AI explanation returned',
+    schema: {
+      example: {
+        submissionId: 'sub-001',
+        aiCodeExplanation: 'Your loop stops one index too early...',
+        alreadyExists: false,
+      },
+    },
+  })
+  async askAiCodeExplanation(
+    @Param('submissionId') submissionId: string,
+    @Req() req: any,
+  ) {
+    return this.submissionsService.askAiCodeExplanation(
+      submissionId,
+      req.user.userId,
+    );
+  }
+
+  @Post('sandbox/run')
+  @ApiOperation({
+    summary: 'Run code in sandbox with test cases',
+    description:
+      'Executes code against provided test cases. If expected output is provided, response includes correctness per case.',
+  })
+  async runSandboxCode(
+    @Body()
+    body: {
+      code: string;
+      language: string;
+      testCases: Array<{ input?: string; output?: string }>;
+    },
+  ) {
+    return this.submissionsService.runCodeSandbox(body);
   }
 }

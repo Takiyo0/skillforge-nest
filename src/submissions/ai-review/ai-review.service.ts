@@ -93,4 +93,18 @@ export class AiReviewService {
   async validateProvider(): Promise<void> {
     await this.provider.validate();
   }
+
+  async generateCodeExplanation(
+    sourceCode: string,
+    language: string,
+  ): Promise<string> {
+    const result = await this.provider.review({
+      exercisePrompt:
+        'Explain what is wrong with this student submission. Focus on bugs, failing logic, edge cases, and how to fix them. Keep it concise, actionable, and beginner-friendly.',
+      sourceCode,
+      language,
+    });
+
+    return result.summary;
+  }
 }

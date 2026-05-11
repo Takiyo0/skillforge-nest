@@ -1,3 +1,10 @@
+<p align="center">
+  <a href="https://nestjs.com/" target="_blank"><img src="docs/assets/logo.svg" width="90" alt="Nest Logo" /></a>
+</p>
+  <p align="center"><b>Skillforge</b>: A hands-on learning platform where courses, code challenges, and AI guidance turn practice into measurable progress.</p>
+
+---
+
 # SkillForge - NestJS Backend
 
 Good days to you! This is the backend of SkillForge App, built with NestJS.
@@ -8,7 +15,7 @@ Good days to you! This is the backend of SkillForge App, built with NestJS.
 - PostgreSQL
 - S3 Compatible Storage (e.g. AWS S3, MinIO)
 - [Piston](https://github.com/engineer-man/piston)
-- Gemini API Key
+- Gemini API Key or ollama
 
 ## Features
 
@@ -87,7 +94,8 @@ $ psql -U postgres -d skillforge < db/skillforge.ddl.sql
    $ kubectl apply -f k8s-secrets.yaml -n skillforge
    ```
 5. Open `k8s-skillforge.yaml` and match the gateway name and namespace matches with your environment. In this case, I'm
-   using traefik as the gateway. Modify HTTPRoute as you like. The default replicas is `2`, you can change it to whatever
+   using traefik as the gateway. Modify HTTPRoute as you like. The default replicas is `2`, you can change it to
+   whatever
    you want.
 6. Run the following command to deploy the project to your Kubernetes cluster.
    ```bash

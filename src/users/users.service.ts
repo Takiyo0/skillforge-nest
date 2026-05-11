@@ -48,9 +48,10 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    // get XP events for total XP
+    // get XP events for total XP and activity summary
     const xpEvents = await this.xpEventRepository.find({
       where: { userId },
+      order: { createdAt: 'DESC' },
     });
     const totalXp = xpEvents.reduce((sum, event) => sum + event.points, 0);
     const level = calculateLevel(totalXp);
@@ -93,12 +94,33 @@ export class UsersService {
       order: { issuedAt: 'DESC' },
     });
 
-    const recentActivity = xpEvents.slice(0, 10).map((event) => ({
-      eventType: event.eventType,
-      points: event.points,
-      sourceType: event.sourceType,
-      createdAt: event.createdAt,
-    }));
+    // privacy/perf: summarize activity by day (last 6 months)
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 182);
+    const activityMap = new Map<
+      string,
+      { createdAt: string; eventCount: number; totalPoints: number }
+    >();
+
+    for (const event of xpEvents) {
+      if (event.createdAt < cutoff) continue;
+      const dateKey = event.createdAt.toISOString().slice(0, 10);
+      const existing = activityMap.get(dateKey);
+      if (existing) {
+        existing.eventCount += 1;
+        existing.totalPoints += event.points;
+      } else {
+        activityMap.set(dateKey, {
+          createdAt: dateKey,
+          eventCount: 1,
+          totalPoints: event.points,
+        });
+      }
+    }
+
+    const recentActivity = Array.from(activityMap.values()).sort((a, b) =>
+      a.createdAt.localeCompare(b.createdAt),
+    );
 
     return {
       id: user.id,

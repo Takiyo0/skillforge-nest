@@ -372,7 +372,7 @@ export class ProgressService {
   async completeQuizUnitBySubmission(
     userId: string,
     unitId: string,
-    submissionId: string,
+    _submissionId: string,
     scorePercent: number,
   ) {
     const unit = await this.unitRepository.findOne({
@@ -414,7 +414,6 @@ export class ProgressService {
     unitProgress.status = UnitProgressStatus.COMPLETED;
     unitProgress.completedAt = new Date();
     unitProgress.lastScorePercent = scorePercent;
-    unitProgress.lastSubmissionId = submissionId;
     await this.unitProgressRepository.save(unitProgress);
 
     const xpPoints = 100;

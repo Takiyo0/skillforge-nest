@@ -40,6 +40,8 @@ async function bootstrap() {
                 scriptSrc: [
                     "'self'",
                     'https://static.cloudflareinsights.com',
+                    'https://cdn.jsdelivr.net',
+                    "'unsafe-eval'",
                 ],
                 styleSrc: ["'self'", 'https:', "'unsafe-inline'"],
                 imgSrc: [
@@ -47,7 +49,16 @@ async function bootstrap() {
                     'data:',
                     'https://cdn-sf-apac.takiyo.us',
                 ],
+                mediaSrc: ["'self'", 'https://cdn-sf-apac.takiyo.us'],
                 fontSrc: ["'self'", 'https:', 'data:'],
+                connectSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+                workerSrc: ["'self'", 'blob:'],
+                baseUri: ["'self'"],
+                formAction: ["'self'"],
+                frameAncestors: ["'self'"],
+                objectSrc: ["'none'"],
+                scriptSrcAttr: ["'none'"],
+                upgradeInsecureRequests: [],
             },
         },
     }));
@@ -87,7 +98,7 @@ async function bootstrap() {
 
   const allowedOrigins = (
       process.env.CORS_ALLOWED_ORIGINS ||
-      'http://localhost:6567,http://localhost:8293'
+      'http://localhost:6567,http://localhost:8293,https://skillforge.takiyo.us,https://skillforge.mika.kivotos.top'
   ).split(',');
   app.enableCors({
     origin: (origin, callback) => {
@@ -110,6 +121,8 @@ async function bootstrap() {
     )
     .setVersion('1.0.0')
     .addServer('http://localhost:6567', 'Local Development')
+    .addServer('https://skillforge.takiyo.us', 'Production Public')
+    .addServer('https://skillforge.mika.kivotos.top', 'Production Internal')
     .addBearerAuth(
       {
         type: 'http',

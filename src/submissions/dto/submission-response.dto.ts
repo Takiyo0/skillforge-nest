@@ -109,6 +109,12 @@ export class SubmissionResponseDto {
   aiScore?: number;
 
   @ApiProperty({
+    description: 'AI explanation about what is wrong with the submitted code',
+    required: false,
+  })
+  aiCodeExplanation?: string;
+
+  @ApiProperty({
     description: 'Number of tests passed',
     required: false,
   })

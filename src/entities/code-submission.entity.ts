@@ -101,6 +101,9 @@ export class CodeSubmission {
   @Column({ type: 'varchar', length: 120, nullable: true, name: 'ai_model' })
   aiModel: string;
 
+  @Column({ type: 'text', nullable: true, name: 'ai_code_explanation' })
+  aiCodeExplanation: string;
+
   @CreateDateColumn({ type: 'timestamptz', name: 'queued_at' })
   queuedAt: Date;
 

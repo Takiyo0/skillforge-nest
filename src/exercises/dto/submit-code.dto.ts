@@ -1,5 +1,6 @@
-import { IsString, IsUUID } from 'class-validator';
+import { IsIn, IsString, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { SUPPORTED_CODE_LANGUAGES } from '../../common/constants/supported-languages';
 
 export class SubmitCodeDto {
   @ApiProperty({
@@ -10,8 +11,10 @@ export class SubmitCodeDto {
 
   @ApiProperty({
     description: 'Programming language for the code',
+    enum: SUPPORTED_CODE_LANGUAGES,
   })
   @IsString()
+  @IsIn(SUPPORTED_CODE_LANGUAGES)
   language: string;
 
   @ApiProperty({
