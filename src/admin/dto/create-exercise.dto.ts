@@ -199,6 +199,14 @@ export class UpdateTestCaseDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiProperty({
+    description: 'Whether test case should be hidden to user or not',
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isHidden?: boolean;
 }
 
 export class CreateHintDto {
