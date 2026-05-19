@@ -178,4 +178,25 @@ export class UnitsController {
       dto,
     );
   }
+
+  @Get(':unitId/final-exams/:finalExamId/attempts/:attemptId/review')
+  @ApiOperation({
+    summary: 'Review a finished final exam attempt',
+    description:
+      'Returns attempt-based review for final exams. Review is available only for passed attempts.',
+  })
+  async getFinalExamAttemptReview(
+    @Param('unitId') unitId: string,
+    @Param('finalExamId') finalExamId: string,
+    @Param('attemptId') attemptId: string,
+    @Req() req: Request & { user?: any },
+  ) {
+    const userId = req.user?.id ?? req.user?.sub;
+    return this.coursesService.getFinalExamAttemptReview(
+      userId,
+      unitId,
+      finalExamId,
+      attemptId,
+    );
+  }
 }

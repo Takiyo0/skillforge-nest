@@ -218,4 +218,59 @@ export class QuizzesService {
       })),
     }));
   }
+
+  async getQuizAttemptReview(
+    quizId: string,
+    attemptId: string,
+    userId: string,
+  ) {
+    const attempt = await this.attemptRepository.findOne({
+      where: { id: attemptId, quizId, userId },
+      relations: ['answers', 'answers.question', 'answers.question.options'],
+    });
+
+    if (!attempt) {
+      throw new NotFoundException('Quiz attempt not found');
+    }
+
+    if (!attempt.submittedAt) {
+      throw new BadRequestException('Attempt is not submitted yet');
+    }
+
+    const revealAnswerDetails = !!attempt.isPassed;
+
+    return {
+      attempt: {
+        id: attempt.id,
+        attemptNumber: attempt.attemptNumber,
+        scorePercent: attempt.scorePercent,
+        isPassed: attempt.isPassed,
+        startedAt: attempt.startedAt,
+        submittedAt: attempt.submittedAt,
+      },
+      revealAnswerDetails,
+      questions: attempt.answers.map((answer) => ({
+        questionId: answer.questionId,
+        questionType: answer.question.questionType,
+        prompt: answer.question.prompt,
+        points: Number(answer.question.points),
+        selectedOptionIds: answer.selectedOptionIds || [],
+        ...(revealAnswerDetails
+          ? {
+              isCorrect: answer.isCorrect,
+              explanation: answer.question.explanation,
+              correctOptionIds: (answer.question.options || [])
+                .filter((opt) => opt.isCorrect)
+                .map((opt) => opt.id),
+            }
+          : {}),
+        options: (answer.question.options || [])
+          .sort((a, b) => a.position - b.position)
+          .map((opt) => ({
+            id: opt.id,
+            label: opt.label,
+          })),
+      })),
+    };
+  }
 }

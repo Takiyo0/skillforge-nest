@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Not, IsNull } from 'typeorm';
+import { Repository, In, Not, IsNull, Between } from 'typeorm';
 import { Course, CourseLevel } from '../entities/course/course.entity';
 import { Unit, UnitType } from '../entities/course/unit.entity';
 import { UnitPrerequisite } from '../entities/course/unit-prerequisite.entity';
@@ -33,6 +33,7 @@ import {
 } from '../entities';
 import { FinalExamComponentType } from '../entities/final-exam-component.entity';
 import { QuizAttempt } from '../entities/quiz-attempt.entity';
+import { QuizAttemptAnswer } from '../entities/quiz-attempt-answer.entity';
 import { XpEvent } from '../entities/xp-event.entity';
 import { ListCoursesDto } from './dto/list-courses.dto';
 import { FinalExamSubmissionDto } from './dto/final-exam-submission.dto';
@@ -73,6 +74,8 @@ export class CoursesService {
     private codeSubmissionRepository: Repository<CodeSubmission>,
     @InjectRepository(QuizAttempt)
     private quizAttemptRepository: Repository<QuizAttempt>,
+    @InjectRepository(QuizAttemptAnswer)
+    private quizAttemptAnswerRepository: Repository<QuizAttemptAnswer>,
     @InjectRepository(FinalExamAttempt)
     private finalExamAttemptRepository: Repository<FinalExamAttempt>,
     @InjectRepository(FinalExam)
@@ -1073,6 +1076,16 @@ export class CoursesService {
 
     let totalScore = 0;
     let totalPoints = 0;
+    const questionById = new Map<string, QuizQuestion>();
+    const answerSnapshotsByQuizId = new Map<
+      string,
+      Array<{
+        questionId: string;
+        selectedOptionIds: string[];
+        isCorrect: boolean;
+        scoreAwarded: number;
+      }>
+    >();
 
     for (const answer of dto.answers) {
       const question = await this.quizQuestionRepository.findOne({
@@ -1084,6 +1097,7 @@ export class CoursesService {
       }
 
       totalPoints += Number(question.points);
+      questionById.set(question.id, question);
 
       const correctOptions = await this.quizOptionRepository.find({
         where: {
@@ -1105,6 +1119,15 @@ export class CoursesService {
       if (isCorrect) {
         totalScore += Number(question.points);
       }
+
+      const existing = answerSnapshotsByQuizId.get(question.quizId) || [];
+      existing.push({
+        questionId: question.id,
+        selectedOptionIds: answer.selectedOptionIds,
+        isCorrect,
+        scoreAwarded: isCorrect ? Number(question.points) : 0,
+      });
+      answerSnapshotsByQuizId.set(question.quizId, existing);
     }
 
     const scorePercent = totalPoints > 0 ? (totalScore / totalPoints) * 100 : 0;
@@ -1115,6 +1138,43 @@ export class CoursesService {
     attempt.isPassed = isPassed;
 
     await this.finalExamAttemptRepository.save(attempt);
+
+    // Persist per-question attempt snapshots into quiz_attempts tables
+    // so review can be attempt-based without adding new tables.
+    for (const [quizId, answerSnapshots] of answerSnapshotsByQuizId.entries()) {
+      const previousAttempts = await this.quizAttemptRepository.count({
+        where: { quizId, userId },
+      });
+
+      const earned = answerSnapshots.reduce((sum, item) => sum + item.scoreAwarded, 0);
+      const possible = answerSnapshots.reduce((sum, item) => {
+        const question = questionById.get(item.questionId);
+        return sum + Number(question?.points || 0);
+      }, 0);
+      const scorePercent = possible > 0 ? (earned / possible) * 100 : 0;
+
+      const quizAttempt = this.quizAttemptRepository.create({
+        quizId,
+        userId,
+        attemptNumber: previousAttempts + 1,
+        startedAt: attempt.startedAt,
+        submittedAt: attempt.submittedAt,
+        scorePercent: Math.round(scorePercent * 100) / 100,
+        isPassed: scorePercent >= Number(finalExam.passingScore),
+      });
+      const savedQuizAttempt = await this.quizAttemptRepository.save(quizAttempt);
+
+      const quizAttemptAnswers = answerSnapshots.map((item) =>
+        this.quizAttemptAnswerRepository.create({
+          attemptId: savedQuizAttempt.id,
+          questionId: item.questionId,
+          selectedOptionIds: item.selectedOptionIds,
+          isCorrect: item.isCorrect,
+          scoreAwarded: item.scoreAwarded,
+        }),
+      );
+      await this.quizAttemptAnswerRepository.save(quizAttemptAnswers);
+    }
 
     if (isPassed) {
       const unitProgress = await this.unitProgressRepository.findOne({
@@ -1239,6 +1299,117 @@ export class CoursesService {
       message: isPassed
         ? 'Exam passed! Unit completed successfully.'
         : `Exam submitted. Score: ${attempt.scorePercent}%. Passing score required: ${finalExam.passingScore}%.`,
+    };
+  }
+
+  async getFinalExamAttemptReview(
+    userId: string,
+    unitId: string,
+    finalExamId: string,
+    attemptId: string,
+  ) {
+    const finalExam = await this.finalExamRepository.findOne({
+      where: { unitId: finalExamId },
+    });
+    if (!finalExam) {
+      throw new NotFoundException('Final exam not found');
+    }
+
+    const attempt = await this.finalExamAttemptRepository.findOne({
+      where: {
+        id: attemptId,
+        finalExamUnitId: unitId,
+        userId,
+      },
+    });
+    if (!attempt || !attempt.submittedAt) {
+      throw new NotFoundException('Final exam attempt not found');
+    }
+
+    if (!attempt.isPassed) {
+      throw new BadRequestException(
+        'Review is available only for passed final exam attempts',
+      );
+    }
+
+    const components = await this.finalExamComponentRepository.find({
+      where: { finalExamUnitId: finalExamId },
+      relations: ['quiz'],
+      order: { position: 'ASC' },
+    });
+    const quizIds = components
+      .filter((component) => component.quizId)
+      .map((component) => component.quizId as string);
+
+    const submittedAt = new Date(attempt.submittedAt);
+    const startedAt = new Date(attempt.startedAt);
+    const startedAtWindowStart = new Date(startedAt.getTime() - 5000);
+    const startedAtWindowEnd = new Date(startedAt.getTime() + 5000);
+    const submittedAtWindowStart = new Date(submittedAt.getTime() - 5000);
+    const submittedAtWindowEnd = new Date(submittedAt.getTime() + 5000);
+
+    const quizAttempts = await this.quizAttemptRepository.find({
+      where: {
+        userId,
+        quizId: In(quizIds),
+        startedAt: Between(startedAtWindowStart, startedAtWindowEnd),
+        submittedAt: Between(submittedAtWindowStart, submittedAtWindowEnd),
+      },
+      relations: ['answers', 'answers.question', 'answers.question.options'],
+    });
+
+    const answersByQuestionId = new Map<string, QuizAttemptAnswer>();
+    for (const qa of quizAttempts) {
+      for (const ans of qa.answers || []) {
+        answersByQuestionId.set(ans.questionId, ans);
+      }
+    }
+
+    const questionIds = Array.from(answersByQuestionId.keys());
+    if (questionIds.length === 0) {
+      throw new BadRequestException(
+        'Review data is unavailable for this final exam attempt. Please use a newer attempt.',
+      );
+    }
+    const questions =
+      questionIds.length > 0
+        ? await this.quizQuestionRepository.find({
+            where: { id: In(questionIds) },
+            relations: ['options'],
+          })
+        : [];
+
+    return {
+      attempt: {
+        id: attempt.id,
+        attemptNumber: attempt.attemptNumber,
+        scorePercent: attempt.scorePercent,
+        isPassed: attempt.isPassed,
+        startedAt: attempt.startedAt,
+        submittedAt: attempt.submittedAt,
+      },
+      revealAnswerDetails: true,
+      questions: questions.map((question) => {
+        const answer = answersByQuestionId.get(question.id);
+        return {
+          questionId: question.id,
+          questionType: question.questionType,
+          prompt: question.prompt,
+          points: Number(question.points),
+          selectedOptionIds: answer?.selectedOptionIds || [],
+          isCorrect: answer?.isCorrect ?? false,
+          explanation: question.explanation,
+          correctOptionIds: (question.options || [])
+            .filter((opt) => opt.isCorrect)
+            .map((opt) => opt.id),
+          options: (question.options || [])
+            .sort((a, b) => a.position - b.position)
+            .map((opt) => ({
+              id: opt.id,
+              label: opt.label,
+            })),
+        };
+      }),
     };
   }
 

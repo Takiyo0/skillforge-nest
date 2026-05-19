@@ -146,4 +146,25 @@ export class QuizzesController {
 
     return this.quizzesService.getQuizSubmissions(quizId, userId);
   }
+
+  @Get('units/:unitId/quizzes/:quizId/submissions/:attemptId/review')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Review a finished quiz attempt',
+    description:
+      'Returns attempt-based review. For failed attempts, correct answers and explanations are hidden.',
+  })
+  async getQuizAttemptReview(
+    @Param('quizId') quizId: string,
+    @Param('attemptId') attemptId: string,
+    @Req() req: any,
+  ) {
+    const userId = req.user?.id ?? req.user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Authenticated user id not found');
+    }
+
+    return this.quizzesService.getQuizAttemptReview(quizId, attemptId, userId);
+  }
 }

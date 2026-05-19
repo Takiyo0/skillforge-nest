@@ -21,6 +21,7 @@ import {
   FinalExamComponent,
 } from '../entities';
 import { QuizAttempt } from '../entities/quiz-attempt.entity';
+import { QuizAttemptAnswer } from '../entities/quiz-attempt-answer.entity';
 import { XpEvent } from '../entities/xp-event.entity';
 import { CoursesController } from './courses.controller';
 import { UnitsController } from './units.controller';
@@ -48,6 +49,7 @@ import { S3Module } from '../common/s3.module';
       QuizOption,
       CodeSubmission,
       QuizAttempt,
+      QuizAttemptAnswer,
       FinalExamAttempt,
       FinalExam,
       FinalExamComponent,
