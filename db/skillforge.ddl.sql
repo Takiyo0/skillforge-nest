@@ -136,6 +136,7 @@ CREATE TABLE onboarding_quiz_responses
     created_at  TIMESTAMPTZ      DEFAULT NOW()
 );
 
+/* UNUSED (not implemented in current app runtime)
 CREATE TABLE interest_tags
 (
     id   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -152,6 +153,7 @@ CREATE TABLE user_interest_tags
     updated_at TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
     PRIMARY KEY (user_id, tag_id)
 );
+*/
 
 -- ===== Courses and learning paths relations =====
 CREATE TABLE courses
@@ -174,6 +176,7 @@ CREATE TABLE courses
     CHECK (price_cents >= 0)
 );
 
+/* UNUSED (not implemented in current app runtime)
 CREATE TABLE course_instructors
 (
     course_id     UUID        NOT NULL REFERENCES courses (id) ON DELETE CASCADE,
@@ -194,6 +197,7 @@ CREATE TABLE course_assets
     size_bytes   BIGINT,
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
+*/
 
 CREATE TABLE learning_path_courses
 (
@@ -204,6 +208,7 @@ CREATE TABLE learning_path_courses
     UNIQUE (learning_path_id, position)
 );
 
+/* UNUSED (not implemented in current app runtime)
 CREATE TABLE user_learning_path_recommendations
 (
     id               UUID PRIMARY KEY               DEFAULT gen_random_uuid(),
@@ -215,6 +220,7 @@ CREATE TABLE user_learning_path_recommendations
     created_at       TIMESTAMPTZ           NOT NULL DEFAULT NOW(),
     UNIQUE (user_id, learning_path_id)
 );
+*/
 
 CREATE TABLE course_enrollments
 (
@@ -227,6 +233,7 @@ CREATE TABLE course_enrollments
     UNIQUE (user_id, course_id)
 );
 
+/* UNUSED (not implemented in current app runtime)
 CREATE TABLE course_reviews
 (
     id          UUID PRIMARY KEY     DEFAULT gen_random_uuid(),
@@ -238,6 +245,7 @@ CREATE TABLE course_reviews
     CHECK (rating BETWEEN 1 AND 5),
     UNIQUE (course_id, user_id)
 );
+*/
 
 -- ===== Units (polymorphic) and prerequisite graph =====
 CREATE TABLE units
@@ -644,6 +652,7 @@ CREATE TABLE public_showcases
 );
 
 -- ===== Admin audit =====
+/* UNUSED (not implemented in current app runtime)
 CREATE TABLE admin_audit_logs
 (
     id            BIGSERIAL PRIMARY KEY,
@@ -655,6 +664,7 @@ CREATE TABLE admin_audit_logs
     after_data    JSONB,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+*/
 
 -- ===== Indexes =====
 CREATE INDEX idx_users_email ON users (email);
