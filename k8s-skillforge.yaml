@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: skillforge-nest
-          image: ghcr.io/takiyo0/skillforge-nest:58b32a8bcd45a583f3fc899e117d7560b66e396b
+          image: ghcr.io/takiyo0/skillforge-nest:68feb91dd3aa598992c00fc8fdf0947321f18c41
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
