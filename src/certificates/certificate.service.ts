@@ -25,23 +25,36 @@ type UserRoleLike = UserRoleEnum | { role: UserRoleEnum | string } | string;
 export interface PublicCertificateResponse {
   id: string;
   certificateCode: string;
-  userName: string;
-  courseName: string;
-  courseLevel: string;
   issuedAt: Date;
-  completedAt: string;
+  qrPayload: {
+    userId: string;
+    courseId: string;
+    issuedAt: string;
+    certificateCode: string;
+    verificationCode: string;
+  };
+  pdfS3Key: string | null;
+  verificationCode: string;
   isRevoked: boolean;
+  revokedAt: Date | null;
+  user: {
+    id: string;
+    displayName: string;
+    avatarS3Key: string | null;
+  } | null;
+  course: {
+    id: string;
+    title: string;
+    completed: true;
+  } | null;
 }
 
 export interface SelfCertificateResponse extends PublicCertificateResponse {
+  userId: string;
   courseId: string;
 }
 
 export interface AdminCertificateResponse extends SelfCertificateResponse {
-  userId: string;
-  userEmail?: string;
-  pdfAvailable: boolean;
-  revokedAt: Date | null;
 }
 
 @Injectable()
@@ -155,6 +168,7 @@ export class CertificateService {
   ): Promise<PublicCertificateResponse> {
     const certificate = await this.certificateRepository.findOne({
       where: { id: certificateId },
+      relations: ['user', 'course'],
     });
 
     if (!certificate) {
@@ -172,6 +186,7 @@ export class CertificateService {
 
     const certificate = await this.certificateRepository.findOne({
       where: { userId, courseId },
+      relations: ['user', 'course'],
     });
 
     if (!certificate) {
@@ -194,7 +209,7 @@ export class CertificateService {
     const [certificates, total] = await this.certificateRepository.findAndCount(
       {
         where: { userId },
-        relations: ['course'],
+        relations: ['user', 'course'],
         order: { issuedAt: 'DESC' },
         skip: (page - 1) * limit,
         take: limit,
@@ -449,21 +464,37 @@ export class CertificateService {
   private toPublicCertificate(
       certificate: Certificate,
   ): PublicCertificateResponse {
+    const qrPayload = this.getQrPayload(certificate);
     return {
       id: certificate.id,
       certificateCode: certificate.certificateCode,
-      userName: certificate.completionSnapshot.userName,
-      courseName: certificate.completionSnapshot.courseName,
-      courseLevel: certificate.completionSnapshot.courseLevel,
       issuedAt: certificate.issuedAt,
-      completedAt: certificate.completionSnapshot.completedAt,
+      qrPayload,
+      pdfS3Key: certificate.pdfS3Key,
+      verificationCode: certificate.verificationCode,
       isRevoked: certificate.isRevoked,
+      revokedAt: certificate.revokedAt,
+      user: certificate.user
+          ? {
+            id: certificate.user.id,
+            displayName: certificate.user.displayName,
+            avatarS3Key: certificate.user.avatarS3Key || null,
+          }
+          : null,
+      course: certificate.course
+          ? {
+            id: certificate.course.id,
+            title: certificate.course.title,
+            completed: true,
+          }
+          : null,
     };
   }
 
   private toSelfCertificate(certificate: Certificate): SelfCertificateResponse {
     return {
       ...this.toPublicCertificate(certificate),
+      userId: certificate.userId,
       courseId: certificate.courseId,
     };
   }
@@ -473,10 +504,53 @@ export class CertificateService {
   ): AdminCertificateResponse {
     return {
       ...this.toSelfCertificate(certificate),
-      userId: certificate.userId,
-      userEmail: certificate.user?.email,
-      pdfAvailable: Boolean(certificate.pdfS3Key),
-      revokedAt: certificate.revokedAt,
     };
+  }
+
+  private getQrPayload(certificate: Certificate): {
+    userId: string;
+    courseId: string;
+    issuedAt: string;
+    certificateCode: string;
+    verificationCode: string;
+  } {
+    const fallback = {
+      userId: certificate.userId,
+      courseId: certificate.courseId,
+      issuedAt: certificate.issuedAt.toISOString(),
+      certificateCode: certificate.certificateCode,
+      verificationCode: certificate.verificationCode,
+    };
+
+    if (!certificate.qrPayload) {
+      return fallback;
+    }
+
+    try {
+      const payloadUrl = new URL(certificate.qrPayload);
+      const payload = payloadUrl.searchParams.get('payload');
+      if (!payload) return fallback;
+
+      const decoded = Buffer.from(payload, 'base64').toString('utf8');
+      const parsed = JSON.parse(decoded) as Partial<typeof fallback>;
+      if (
+          parsed.userId &&
+          parsed.courseId &&
+          parsed.issuedAt &&
+          parsed.certificateCode &&
+          parsed.verificationCode
+      ) {
+        return {
+          userId: parsed.userId,
+          courseId: parsed.courseId,
+          issuedAt: parsed.issuedAt,
+          certificateCode: parsed.certificateCode,
+          verificationCode: parsed.verificationCode,
+        };
+      }
+      return fallback;
+    } catch {
+      return fallback;
+    }
   }
 }

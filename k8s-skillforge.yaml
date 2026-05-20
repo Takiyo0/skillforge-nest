@@ -5,7 +5,7 @@ metadata:
   labels:
     app: skillforge-server
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: skillforge-server
@@ -20,6 +20,8 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
+              name: http
+              protocol: TCP
           envFrom:
             - secretRef:
                 name: skillforge-secret

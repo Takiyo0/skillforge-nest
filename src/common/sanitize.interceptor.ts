@@ -5,12 +5,6 @@ import { map } from 'rxjs/operators';
 const SENSITIVE_KEYS = new Set([
   'passwordHash',
   'password_hash',
-  'verificationCode',
-  'verification_code',
-  'qrPayload',
-  'qr_payload',
-  'pdfS3Key',
-  'pdf_s3_key',
   'tokenHash',
   'token_hash',
   'pistonToken',
