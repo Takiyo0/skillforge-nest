@@ -78,7 +78,9 @@ export class ForumService {
     const [posts, total] = await postsQuery.getManyAndCount();
 
     return {
-      data: posts.map((post) => this.formatPostResponse(post)),
+      data: posts.map((post) =>
+        this.formatPostResponse(post, userId, isModerator),
+      ),
       total,
       page,
       limit,
@@ -93,7 +95,7 @@ export class ForumService {
   ) {
     const post = await this.postRepository.findOne({
       where: { id: postId },
-      relations: ['author', 'course'],
+      relations: ['author', 'course', 'replies'],
     });
 
     if (!post) {
@@ -104,18 +106,17 @@ export class ForumService {
       throw new NotFoundException('Post has been deleted');
     }
 
+    const isModerator = userId
+      ? await this.isCourseModerator(post.courseId, userId, userRoles)
+      : false;
+
     if (post.status === ForumEntityStatus.HIDDEN && userId) {
-      const isModerator = await this.isCourseModerator(
-        post.courseId,
-        userId,
-        userRoles,
-      );
       if (!isModerator && post.authorId !== userId) {
         throw new NotFoundException('Post not found');
       }
     }
 
-    return this.formatPostResponse(post);
+    return this.formatPostResponse(post, userId, isModerator);
   }
 
   async createPost(userId: string, dto: CreateForumPostDto) {
@@ -452,7 +453,7 @@ export class ForumService {
 
     return {
       data: posts.map((post) => ({
-        ...this.formatPostResponse(post),
+        ...this.formatPostResponse(post, userId, false),
         course: {
           id: post.course?.id,
           name: post.course?.title,
@@ -465,11 +466,21 @@ export class ForumService {
     };
   }
 
-  private formatPostResponse(post: ForumPost) {
+  private formatPostResponse(
+    post: ForumPost,
+    currentUserId?: string,
+    isModerator: boolean = false,
+  ) {
     const activeReplies =
-      post.replies?.filter(
-        (reply) => reply.status !== ForumEntityStatus.DELETED,
-      ) || [];
+      post.replies?.filter((reply) => {
+        if (reply.status === ForumEntityStatus.DELETED) return false;
+        if (isModerator) return true;
+        if (reply.status === ForumEntityStatus.VISIBLE) return true;
+        return (
+          reply.status === ForumEntityStatus.HIDDEN &&
+          reply.authorId === currentUserId
+        );
+      }) || [];
 
     return {
       id: post.id,

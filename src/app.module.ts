@@ -19,6 +19,7 @@ import {LearningPathModule} from './learning-paths/learning-path.module';
 import {ForumModule} from './forum/forum.module';
 import {ServeStaticModule} from "@nestjs/serve-static";
 import {join} from 'path';
+import { MonitoringModule } from './monitoring/monitoring.module';
 
 @Module({
     imports: [
@@ -67,6 +68,7 @@ import {join} from 'path';
         BadgesModule,
         LearningPathModule,
         ForumModule,
+        MonitoringModule,
     ],
     controllers: [AppController],
     providers: [AppService],

@@ -68,6 +68,7 @@ async function bootstrap() {
     max: Number(process.env.RATE_LIMIT_MAX) || 200, // limit each IP to 200 requests per windowMs
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => req.path === '/metrics' || req.path === '/api/v1/metrics',
   });
   app.use(limiter);
 

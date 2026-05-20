@@ -67,7 +67,7 @@ export class SubmissionsController {
   ) {
     return this.submissionsService.getUserUnitSubmissions(
       unitId,
-      req.user.userId,
+      req.user.id,
     );
   }
 
@@ -114,7 +114,7 @@ export class SubmissionsController {
   ) {
     return this.submissionsService.getSubmissionStatus(
       submissionId,
-      req.user.userId,
+      req.user.id,
     );
   }
 
@@ -176,7 +176,7 @@ export class SubmissionsController {
   ) {
     return this.submissionsService.getSubmissionFeedback(
       submissionId,
-      req.user.userId,
+      req.user.id,
     );
   }
 
@@ -208,7 +208,7 @@ export class SubmissionsController {
   ) {
     return this.submissionsService.askAiCodeExplanation(
       submissionId,
-      req.user.userId,
+      req.user.id,
     );
   }
 
