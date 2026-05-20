@@ -45,6 +45,7 @@ export interface PublicCertificateResponse {
   course: {
     id: string;
     title: string;
+      level: string;
     completed: true;
   } | null;
 }
@@ -485,6 +486,7 @@ export class CertificateService {
           ? {
             id: certificate.course.id,
             title: certificate.course.title,
+              level: certificate.course.level,
             completed: true,
           }
           : null,
