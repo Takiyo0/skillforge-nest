@@ -14,6 +14,30 @@ import {removeUndefinedProperties} from "../common/utils/object";
 // re-export DTOs for backward compatibility
 export { CreateShowcaseDto, UpdateShowcaseDto };
 
+export interface ShowcaseResponse {
+    id: string;
+    userId: string;
+    courseId: string;
+    certificateId: string | null;
+    title: string;
+    description: string | null;
+    projectUrl: string | null;
+    isPublic: boolean;
+    createdAt: Date;
+    user?: {
+        id: string;
+        displayName: string;
+        avatarS3Key: string | null;
+    };
+    course?: {
+        id: string;
+        title: string;
+        slug: string;
+        level: string;
+        thumbnailS3Key: string | null;
+    };
+}
+
 @Injectable()
 export class ShowcaseService {
   constructor(
@@ -32,7 +56,7 @@ export class ShowcaseService {
     userId: string,
     courseId: string,
     createShowcaseDto: CreateShowcaseDto,
-  ): Promise<PublicShowcase> {
+  ): Promise<ShowcaseResponse> {
     const course = await this.courseRepository.findOne({
       where: { id: courseId },
     });
@@ -76,7 +100,8 @@ export class ShowcaseService {
       isPublic: createShowcaseDto.isPublic ?? true,
     });
 
-    return this.showcaseRepository.save(showcase);
+      const saved = await this.showcaseRepository.save(showcase);
+      return this.toShowcaseResponse(saved);
   }
 
   /**
@@ -85,7 +110,7 @@ export class ShowcaseService {
   async getUserShowcase(
     userId: string,
     showcaseId: string,
-  ): Promise<PublicShowcase> {
+  ): Promise<ShowcaseResponse> {
     const showcase = await this.showcaseRepository.findOne({
       where: { id: showcaseId, userId },
       relations: ['user', 'course'],
@@ -95,7 +120,7 @@ export class ShowcaseService {
       throw new NotFoundException('Showcase not found');
     }
 
-    return showcase;
+      return this.toShowcaseResponse(showcase);
   }
 
   /**
@@ -105,7 +130,7 @@ export class ShowcaseService {
     page: number = 1,
     limit: number = 10,
   ): Promise<{
-    data: PublicShowcase[];
+      data: ShowcaseResponse[];
     total: number;
     page: number;
     limit: number;
@@ -118,7 +143,12 @@ export class ShowcaseService {
       take: limit,
     });
 
-    return { data: showcases, total, page, limit };
+      return {
+          data: showcases.map((showcase) => this.toShowcaseResponse(showcase)),
+          total,
+          page,
+          limit,
+      };
   }
 
   /**
@@ -130,7 +160,7 @@ export class ShowcaseService {
     page: number = 1,
     limit: number = 10,
   ): Promise<{
-    data: PublicShowcase[];
+      data: ShowcaseResponse[];
     total: number;
     page: number;
     limit: number;
@@ -145,7 +175,12 @@ export class ShowcaseService {
       take: limit,
     });
 
-    return { data: showcases, total, page, limit };
+      return {
+          data: showcases.map((showcase) => this.toShowcaseResponse(showcase)),
+          total,
+          page,
+          limit,
+      };
   }
 
   /**
@@ -156,7 +191,7 @@ export class ShowcaseService {
     page: number = 1,
     limit: number = 10,
   ): Promise<{
-    data: PublicShowcase[];
+      data: ShowcaseResponse[];
     total: number;
     page: number;
     limit: number;
@@ -169,7 +204,12 @@ export class ShowcaseService {
       take: limit,
     });
 
-    return { data: showcases, total, page, limit };
+      return {
+          data: showcases.map((showcase) => this.toShowcaseResponse(showcase)),
+          total,
+          page,
+          limit,
+      };
   }
 
   /**
@@ -179,7 +219,7 @@ export class ShowcaseService {
     userId: string,
     showcaseId: string,
     updateShowcaseDto: UpdateShowcaseDto,
-  ): Promise<PublicShowcase> {
+  ): Promise<ShowcaseResponse> {
     const showcase = await this.showcaseRepository.findOne({
       where: { id: showcaseId, userId },
     });
@@ -189,7 +229,8 @@ export class ShowcaseService {
     }
 
     Object.assign(showcase, removeUndefinedProperties(updateShowcaseDto));
-    return this.showcaseRepository.save(showcase);
+      const saved = await this.showcaseRepository.save(showcase);
+      return this.toShowcaseResponse(saved);
   }
 
   /**
@@ -206,4 +247,34 @@ export class ShowcaseService {
 
     await this.showcaseRepository.remove(showcase);
   }
+
+    private toShowcaseResponse(showcase: PublicShowcase): ShowcaseResponse {
+        return {
+            id: showcase.id,
+            userId: showcase.userId,
+            courseId: showcase.courseId,
+            certificateId: showcase.certificateId,
+            title: showcase.title,
+            description: showcase.description,
+            projectUrl: showcase.projectUrl,
+            isPublic: showcase.isPublic,
+            createdAt: showcase.createdAt,
+            user: showcase.user
+                ? {
+                    id: showcase.user.id,
+                    displayName: showcase.user.displayName,
+                    avatarS3Key: showcase.user.avatarS3Key,
+                }
+                : undefined,
+            course: showcase.course
+                ? {
+                    id: showcase.course.id,
+                    title: showcase.course.title,
+                    slug: showcase.course.slug,
+                    level: showcase.course.level,
+                    thumbnailS3Key: showcase.course.thumbnailS3Key,
+                }
+                : undefined,
+        };
+    }
 }

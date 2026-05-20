@@ -4,7 +4,6 @@ import {
   Post,
   Param,
   BadRequestException,
-  NotFoundException,
   UseGuards,
   Request,
   Query,
@@ -19,7 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { CertificateService } from './certificate.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { Certificate } from '../entities';
+import {AdminGuard} from '../auth/guards/admin.guard';
 
 @ApiTags('Certificates')
 @Controller('certificates')
@@ -72,12 +71,7 @@ export class CertificateController {
     @Request() req: any,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
-  ): Promise<{
-    data: Certificate[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
+  ) {
     return this.certificateService.listUserCertificates(
       req.user.id,
       page,
@@ -86,7 +80,7 @@ export class CertificateController {
   }
 
   @Get('admin/all')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({
     summary: 'List all certificates (admin)',
@@ -134,12 +128,7 @@ export class CertificateController {
   async listAllCertificates(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
-  ): Promise<{
-    data: Certificate[];
-    total: number;
-    page: number;
-    limit: number;
-  }> {
+  ) {
     return this.certificateService.listAllCertificates(page, limit);
   }
 
@@ -252,7 +241,7 @@ export class CertificateController {
   })
   async getCertificate(
     @Param('certificateId') certificateId: string,
-  ): Promise<Certificate> {
+  ) {
     return this.certificateService.getCertificate(certificateId);
   }
 
@@ -292,7 +281,7 @@ export class CertificateController {
   async getUserCertificate(
     @Param('courseId') courseId: string,
     @Request() req: any,
-  ): Promise<Certificate> {
+  ) {
     return this.certificateService.getUserCourseCertificate(
       req.user?.id,
       courseId,
@@ -300,10 +289,12 @@ export class CertificateController {
   }
 
   @Get(':certificateId/download')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
   @ApiOperation({
     summary: 'Get certificate download URL',
     description:
-      'Generate a signed download URL for a certificate PDF (public endpoint)',
+        'Generate a signed download URL for a certificate PDF owned by the authenticated user or an admin',
   })
   @ApiParam({
     name: 'certificateId',
@@ -326,14 +317,18 @@ export class CertificateController {
   })
   async getDownloadUrl(
     @Param('certificateId') certificateId: string,
+    @Request() req: any,
   ): Promise<{ downloadUrl: string }> {
-    const downloadUrl =
-      await this.certificateService.getCertificateDownloadUrl(certificateId);
+    const downloadUrl = await this.certificateService.getCertificateDownloadUrl(
+        certificateId,
+        req.user?.id,
+        req.user?.roles || [],
+    );
     return { downloadUrl };
   }
 
   @Post(':certificateId/revoke')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({
     summary: 'Revoke certificate',

@@ -10,6 +10,7 @@ import {
 import { User } from '../entities/user.entity';
 import { Course } from '../entities/course/course.entity';
 import { S3Module } from '../common/s3.module';
+import {AdminGuard} from '../auth/guards/admin.guard';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { S3Module } from '../common/s3.module';
     ]),
     S3Module,
   ],
-  providers: [CertificateService],
+  providers: [CertificateService, AdminGuard],
   controllers: [CertificateController],
   exports: [CertificateService],
 })

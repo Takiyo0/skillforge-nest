@@ -1,4 +1,4 @@
-import { IsOptional, IsEnum, IsString, IsInt, Min } from 'class-validator';
+import {IsOptional, IsEnum, IsString, IsInt, Min, Max, MaxLength} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { CourseLevel } from '../../entities/course/course.entity';
@@ -10,6 +10,7 @@ export class ListCoursesDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(120)
   search?: string;
 
   @ApiProperty({
@@ -43,5 +44,6 @@ export class ListCoursesDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(50)
   limit?: number = 10;
 }

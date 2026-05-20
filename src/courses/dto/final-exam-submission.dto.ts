@@ -1,4 +1,4 @@
-import { IsArray, IsUUID, ValidateNested } from 'class-validator';
+import {ArrayMaxSize, IsArray, IsUUID, ValidateNested} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -14,6 +14,8 @@ export class AnswerSubmissionDto {
     type: [String],
   })
   @IsArray()
+  @ArrayMaxSize(20)
+  @IsUUID('4', {each: true})
   selectedOptionIds: string[];
 }
 
@@ -23,6 +25,7 @@ export class FinalExamSubmissionDto {
     type: [AnswerSubmissionDto],
   })
   @IsArray()
+  @ArrayMaxSize(100)
   @ValidateNested({ each: true })
   @Type(() => AnswerSubmissionDto)
   answers: AnswerSubmissionDto[];

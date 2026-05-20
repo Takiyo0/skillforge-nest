@@ -4,6 +4,8 @@ import {
   ValidateNested,
   IsString,
   IsOptional,
+  ArrayMaxSize,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -20,6 +22,7 @@ export class QuizAnswerDto {
     type: [String],
   })
   @IsArray()
+  @ArrayMaxSize(20)
   @IsUUID('4', { each: true })
   selectedOptionIds: string[];
 
@@ -29,6 +32,7 @@ export class QuizAnswerDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   answerText?: string;
 }
 
@@ -38,6 +42,7 @@ export class SubmitQuizDto {
     type: [QuizAnswerDto],
   })
   @IsArray()
+  @ArrayMaxSize(100)
   @ValidateNested({ each: true })
   @Type(() => QuizAnswerDto)
   answers: QuizAnswerDto[];

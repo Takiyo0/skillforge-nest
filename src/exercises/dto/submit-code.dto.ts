@@ -1,4 +1,4 @@
-import { IsIn, IsString, IsUUID } from 'class-validator';
+import {IsIn, IsString, IsUUID, MaxLength} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { SUPPORTED_CODE_LANGUAGES } from '../../common/constants/supported-languages';
 
@@ -21,5 +21,6 @@ export class SubmitCodeDto {
     description: 'Source code to submit',
   })
   @IsString()
+  @MaxLength(100000)
   sourceCode: string;
 }

@@ -48,6 +48,7 @@ async function bootstrap() {
                     "'self'",
                     'data:',
                     'https://cdn-sf-apac.takiyo.us',
+                    'https://api.dicebear.com',
                 ],
                 mediaSrc: ["'self'", 'https://cdn-sf-apac.takiyo.us'],
                 fontSrc: ["'self'", 'https:', 'data:'],
@@ -62,6 +63,24 @@ async function bootstrap() {
             },
         },
     }));
+
+    const authLimiter = rateLimit({
+        windowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS) || 5 * 60 * 1000,
+        max: Number(process.env.AUTH_RATE_LIMIT_MAX) || 20,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+    app.use('/api/v1/auth/login', authLimiter);
+    app.use('/api/v1/auth/register', authLimiter);
+
+    const publicVerificationLimiter = rateLimit({
+        windowMs:
+            Number(process.env.PUBLIC_VERIFY_RATE_LIMIT_WINDOW_MS) || 60 * 1000,
+        max: Number(process.env.PUBLIC_VERIFY_RATE_LIMIT_MAX) || 60,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+    app.use('/api/v1/certificates/verify', publicVerificationLimiter);
 
   const limiter = rateLimit({
     windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 10 * 1000, // 10 seconds

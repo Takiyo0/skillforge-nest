@@ -29,6 +29,7 @@ export class CreateUnitDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   summary?: string;
 
   @ApiProperty({
@@ -89,6 +90,7 @@ export class UpdateUnitDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   summary?: string;
 
   @ApiProperty({

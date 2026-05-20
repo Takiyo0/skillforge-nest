@@ -18,6 +18,7 @@ import { UpdatePreferencesDto } from './dto/update-preferences.dto';
 import { calculateLevel, getLevelInfo } from '../common/utils/level-calculator';
 import { S3Service } from '../common/s3.service';
 import * as path from 'path';
+import {assertUploadedFileAllowed} from '../common/upload-limits';
 
 @Injectable()
 export class UsersService {
@@ -232,6 +233,7 @@ export class UsersService {
 
     if (avatarFile) {
       try {
+        await assertUploadedFileAllowed(avatarFile, 'image');
         // format: {userId}-{timestamp}.ext (e.g., 550e8400-xxx-1713001383000.jpg)
         const ext = path.extname(avatarFile.originalname);
         const timestamp = Date.now();

@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsUrl,
   IsUUID,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateShowcaseDto {
@@ -21,6 +22,7 @@ export class CreateShowcaseDto {
     maxLength: 200,
   })
   @IsString()
+  @MaxLength(200)
   title: string;
 
   @ApiProperty({
@@ -30,6 +32,7 @@ export class CreateShowcaseDto {
     maxLength: 2000,
   })
   @IsString()
+  @MaxLength(2000)
   @IsOptional()
   description?: string;
 
@@ -47,7 +50,7 @@ export class CreateShowcaseDto {
     example: 'cert-001',
     required: false,
   })
-  @IsString()
+  @IsUUID()
   @IsOptional()
   certificateId?: string;
 
@@ -70,6 +73,7 @@ export class UpdateShowcaseDto {
     maxLength: 200,
   })
   @IsString()
+  @MaxLength(200)
   @IsOptional()
   title?: string;
 
@@ -80,6 +84,7 @@ export class UpdateShowcaseDto {
     maxLength: 2000,
   })
   @IsString()
+  @MaxLength(2000)
   @IsOptional()
   description?: string;
 
