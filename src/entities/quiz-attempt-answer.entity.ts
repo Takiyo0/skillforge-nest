@@ -42,7 +42,6 @@ export class QuizAttemptAnswer {
   })
   scoreAwarded: number;
 
-  
   @ManyToOne(() => QuizAttempt, (attempt) => attempt.answers)
   @JoinColumn({ name: 'attempt_id' })
   attempt: QuizAttempt;

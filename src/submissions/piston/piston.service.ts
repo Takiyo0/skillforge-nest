@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { normalizeCodeLanguage } from '../../common/constants/supported-languages';
+import {
+    getErrorMessage,
+    mapToUpstreamException,
+    UpstreamDependencyException,
+} from '../../common/runtime-exception.helper';
 
 export interface PistonExecuteRequest {
   sourceCode: string;
@@ -76,7 +81,9 @@ export class PistonService {
       });
 
       if (!response.ok) {
-        throw new Error(
+          throw new UpstreamDependencyException(
+              'Piston',
+              'bad_gateway',
           `Piston API error: ${response.status} ${response.statusText} - ${await response.text()}`,
         );
       }
@@ -97,8 +104,10 @@ export class PistonService {
         passed: (result.run?.code ?? -1) === 0,
       };
     } catch (error) {
-      this.logger.error(`Failed to execute code with Piston: ${error.message}`);
-      throw error;
+        this.logger.error(
+            `Failed to execute code with Piston: ${getErrorMessage(error)}`,
+        );
+        mapToUpstreamException(error, 'Piston', 'executing code');
     }
   }
 

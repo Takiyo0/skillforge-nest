@@ -4,6 +4,8 @@ export function assertEnv(vars: string[]) {
     if (!process.env[v]) missing.push(v);
   }
   if (missing.length) {
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+      throw new Error(
+          `Missing required environment variables: ${missing.join(', ')}`,
+      );
   }
 }

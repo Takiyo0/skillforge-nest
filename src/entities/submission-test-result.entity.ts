@@ -34,7 +34,6 @@ export class SubmissionTestResult {
   @Column({ type: 'int', nullable: true, name: 'memory_kb' })
   memoryKb: number;
 
-  
   @ManyToOne(() => CodeSubmission, (submission) => submission.testResults)
   @JoinColumn({ name: 'submission_id' })
   submission: CodeSubmission;

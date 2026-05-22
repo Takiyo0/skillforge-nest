@@ -6,18 +6,18 @@ import {MetricsHttpMiddleware} from './metrics-http.middleware';
 import {OperationMetricsInterceptor} from './operation-metrics.interceptor';
 
 @Module({
-    controllers: [MonitoringController],
-    providers: [
-        MonitoringService,
-        {
-            provide: APP_INTERCEPTOR,
-            useClass: OperationMetricsInterceptor,
-        },
-    ],
-    exports: [MonitoringService],
+  controllers: [MonitoringController],
+  providers: [
+    MonitoringService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: OperationMetricsInterceptor,
+    },
+  ],
+  exports: [MonitoringService],
 })
 export class MonitoringModule implements NestModule {
-    configure(consumer: MiddlewareConsumer): void {
-        consumer.apply(MetricsHttpMiddleware).forRoutes('*');
-    }
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(MetricsHttpMiddleware).forRoutes('*');
+  }
 }

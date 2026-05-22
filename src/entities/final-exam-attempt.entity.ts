@@ -39,7 +39,6 @@ export class FinalExamAttempt {
   @Column({ type: 'int', name: 'attempt_number' })
   attemptNumber: number;
 
-  
   @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })
   user: User;

@@ -27,7 +27,6 @@ export class ExerciseTestCase {
   @Column({ type: 'decimal', precision: 6, scale: 2, default: 1 })
   weight: number;
 
-  
   @ManyToOne(() => Exercise, (exercise) => exercise.testCases)
   @JoinColumn({ name: 'exercise_id' })
   exercise: Exercise;

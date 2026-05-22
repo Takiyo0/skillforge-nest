@@ -25,7 +25,6 @@ export class SubmissionEvent {
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
-  
   @ManyToOne(() => CodeSubmission, (submission) => submission.events)
   @JoinColumn({ name: 'submission_id' })
   submission: CodeSubmission;

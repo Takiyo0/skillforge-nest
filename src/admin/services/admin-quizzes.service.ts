@@ -18,7 +18,7 @@ import {
   UpdateQuizQuestionDto,
   UpdateQuizOptionDto,
 } from '../dto/create-quiz.dto';
-import {removeUndefinedProperties} from "../../common/utils/object";
+import {removeUndefinedProperties} from '../../common/utils/object';
 import { ensureOwnerOrAdmin } from '../../common/ownership.helper';
 
 @Injectable()
@@ -47,8 +47,6 @@ export class AdminQuizzesService {
     if (!unit) {
       throw new NotFoundException('Unit not found');
     }
-
-
 
     ensureOwnerOrAdmin(unit.course.createdBy, userOrUserId);
 
@@ -242,7 +240,10 @@ export class AdminQuizzesService {
       throw new NotFoundException('Option not found');
     }
 
-    ensureOwnerOrAdmin(option.question.quiz.unit.course.createdBy, userOrUserId);
+      ensureOwnerOrAdmin(
+          option.question.quiz.unit.course.createdBy,
+          userOrUserId,
+      );
 
     Object.assign(option, removeUndefinedProperties(updateOptionDto));
     return await this.optionRepository.save(option);
@@ -263,7 +264,10 @@ export class AdminQuizzesService {
       throw new NotFoundException('Option not found');
     }
 
-    ensureOwnerOrAdmin(option.question.quiz.unit.course.createdBy, userOrUserId);
+      ensureOwnerOrAdmin(
+          option.question.quiz.unit.course.createdBy,
+          userOrUserId,
+      );
 
     await this.optionRepository.remove(option);
   }

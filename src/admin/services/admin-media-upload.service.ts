@@ -54,7 +54,6 @@ export class AdminMediaUploadService {
             throw new NotFoundException('Course not found');
         }
 
-
         ensureOwnerOrAdmin(course.createdBy, userOrUserId);
 
         const ext = this.getSafeExtension(file.originalname);

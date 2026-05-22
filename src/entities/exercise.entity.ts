@@ -52,7 +52,6 @@ export class Exercise {
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
-  
   @ManyToOne(() => Unit, (unit) => unit.exercises)
   @JoinColumn({ name: 'unit_id' })
   unit: Unit;

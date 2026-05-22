@@ -4,6 +4,7 @@ import {
   Post,
   Param,
   BadRequestException,
+  HttpException,
   UseGuards,
   Request,
   Query,
@@ -204,9 +205,12 @@ export class CertificateController {
         },
       };
     } catch (error) {
+      const message =
+          error instanceof HttpException ? this.getSafeHttpMessage(error) : null;
+
       return {
         isValid: false,
-        message: error.message || 'Invalid certificate',
+        message: message || 'Invalid certificate',
       };
     }
   }
@@ -239,9 +243,7 @@ export class CertificateController {
     status: 404,
     description: 'Certificate not found',
   })
-  async getCertificate(
-    @Param('certificateId') certificateId: string,
-  ) {
+  async getCertificate(@Param('certificateId') certificateId: string) {
     return this.certificateService.getCertificate(certificateId);
   }
 
@@ -361,5 +363,26 @@ export class CertificateController {
   ): Promise<{ message: string }> {
     await this.certificateService.revokeCertificate(certificateId);
     return { message: 'Certificate revoked successfully' };
+  }
+
+  private getSafeHttpMessage(error: HttpException): string | null {
+    const response = error.getResponse();
+
+    if (typeof response === 'string') {
+      return response;
+    }
+
+    if (
+        typeof response === 'object' &&
+        response !== null &&
+        'message' in response
+    ) {
+      const message = (response as { message?: unknown }).message;
+      if (typeof message === 'string') {
+        return message;
+      }
+    }
+
+    return null;
   }
 }

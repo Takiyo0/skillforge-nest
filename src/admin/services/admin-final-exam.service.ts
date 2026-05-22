@@ -22,7 +22,7 @@ import {
   CreateExerciseDto,
   UpdateExerciseDto,
 } from '../dto/create-exercise.dto';
-import {removeUndefinedProperties} from "../../common/utils/object";
+import {removeUndefinedProperties} from '../../common/utils/object';
 import { ensureOwnerOrAdmin } from '../../common/ownership.helper';
 
 @Injectable()
@@ -351,7 +351,8 @@ export class AdminFinalExamService {
     optionId: string,
     userOrUserId: any,
   ): Promise<void> {
-    const userId = typeof userOrUserId === 'string' ? userOrUserId : userOrUserId?.id;
+      const userId =
+          typeof userOrUserId === 'string' ? userOrUserId : userOrUserId?.id;
     const unit = await this.unitRepository.findOne({
       where: { id: unitId },
       relations: ['course'],
@@ -492,7 +493,10 @@ export class AdminFinalExamService {
     return this.getFinalExam(unitId);
   }
 
-  async deleteFinalExamExercise(unitId: string, userOrUserId: any): Promise<void> {
+    async deleteFinalExamExercise(
+        unitId: string,
+        userOrUserId: any,
+    ): Promise<void> {
     const unit = await this.unitRepository.findOne({
       where: { id: unitId },
       relations: ['course'],

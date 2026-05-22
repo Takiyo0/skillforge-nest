@@ -33,54 +33,56 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   // helmet for secure headers
-    app.use(helmet({
+  app.use(
+      helmet({
         contentSecurityPolicy: {
-            directives: {
-                defaultSrc: ["'self'"],
-                scriptSrc: [
-                    "'self'",
-                    'https://static.cloudflareinsights.com',
-                    'https://cdn.jsdelivr.net',
-                    "'unsafe-eval'",
-                ],
-                styleSrc: ["'self'", 'https:', "'unsafe-inline'"],
-                imgSrc: [
-                    "'self'",
-                    'data:',
-                    'https://cdn-sf-apac.takiyo.us',
-                    'https://api.dicebear.com',
-                ],
-                mediaSrc: ["'self'", 'https://cdn-sf-apac.takiyo.us'],
-                fontSrc: ["'self'", 'https:', 'data:'],
-                connectSrc: ["'self'", 'https://cdn.jsdelivr.net'],
-                workerSrc: ["'self'", 'blob:'],
-                baseUri: ["'self'"],
-                formAction: ["'self'"],
-                frameAncestors: ["'self'"],
-                objectSrc: ["'none'"],
-                scriptSrcAttr: ["'none'"],
-                upgradeInsecureRequests: [],
-            },
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: [
+              "'self'",
+              'https://static.cloudflareinsights.com',
+              'https://cdn.jsdelivr.net',
+              "'unsafe-eval'",
+            ],
+            styleSrc: ["'self'", 'https:', "'unsafe-inline'"],
+            imgSrc: [
+              "'self'",
+              'data:',
+              'https://cdn-sf-apac.takiyo.us',
+              'https://api.dicebear.com',
+            ],
+            mediaSrc: ["'self'", 'https://cdn-sf-apac.takiyo.us'],
+            fontSrc: ["'self'", 'https:', 'data:'],
+            connectSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+            workerSrc: ["'self'", 'blob:'],
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
+            frameAncestors: ["'self'"],
+            objectSrc: ["'none'"],
+            scriptSrcAttr: ["'none'"],
+            upgradeInsecureRequests: [],
+          },
         },
-    }));
+      }),
+  );
 
-    const authLimiter = rateLimit({
-        windowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS) || 5 * 60 * 1000,
-        max: Number(process.env.AUTH_RATE_LIMIT_MAX) || 20,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
-    app.use('/api/v1/auth/login', authLimiter);
-    app.use('/api/v1/auth/register', authLimiter);
+  const authLimiter = rateLimit({
+    windowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS) || 5 * 60 * 1000,
+    max: Number(process.env.AUTH_RATE_LIMIT_MAX) || 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use('/api/v1/auth/login', authLimiter);
+  app.use('/api/v1/auth/register', authLimiter);
 
-    const publicVerificationLimiter = rateLimit({
-        windowMs:
-            Number(process.env.PUBLIC_VERIFY_RATE_LIMIT_WINDOW_MS) || 60 * 1000,
-        max: Number(process.env.PUBLIC_VERIFY_RATE_LIMIT_MAX) || 60,
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
-    app.use('/api/v1/certificates/verify', publicVerificationLimiter);
+  const publicVerificationLimiter = rateLimit({
+    windowMs:
+        Number(process.env.PUBLIC_VERIFY_RATE_LIMIT_WINDOW_MS) || 60 * 1000,
+    max: Number(process.env.PUBLIC_VERIFY_RATE_LIMIT_MAX) || 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use('/api/v1/certificates/verify', publicVerificationLimiter);
 
   const limiter = rateLimit({
     windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 10 * 1000, // 10 seconds
@@ -126,7 +128,7 @@ async function bootstrap() {
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        callback(null, false);
       }
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

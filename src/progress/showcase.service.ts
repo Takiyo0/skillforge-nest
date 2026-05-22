@@ -9,7 +9,7 @@ import { PublicShowcase } from '../entities/public-showcase.entity';
 import { Course } from '../entities/course/course.entity';
 import { Certificate } from '../entities/certificate.entity';
 import { CreateShowcaseDto, UpdateShowcaseDto } from './dto/showcase.dto';
-import {removeUndefinedProperties} from "../common/utils/object";
+import {removeUndefinedProperties} from '../common/utils/object';
 
 // re-export DTOs for backward compatibility
 export { CreateShowcaseDto, UpdateShowcaseDto };

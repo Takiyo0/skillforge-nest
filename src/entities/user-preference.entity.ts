@@ -35,7 +35,6 @@ export class UserPreference {
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
 
-  
   @OneToOne(() => User, (user) => user.preference, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;

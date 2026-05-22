@@ -1,12 +1,11 @@
 import {
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Not, IsNull, Between } from 'typeorm';
-import { Course, CourseLevel } from '../entities/course/course.entity';
+import {Course} from '../entities/course/course.entity';
 import { Unit, UnitType } from '../entities/course/unit.entity';
 import { UnitPrerequisite } from '../entities/course/unit-prerequisite.entity';
 import { ModuleContent } from '../entities/course/module-content.entity';
@@ -26,7 +25,6 @@ import { QuizOption } from '../entities/quiz-option.entity';
 import {
   CodeSubmission,
   SubmissionStatus,
-  SubmissionKind,
   FinalExamAttempt,
   FinalExam,
   FinalExamComponent,
@@ -40,6 +38,7 @@ import { FinalExamSubmissionDto } from './dto/final-exam-submission.dto';
 import { CertificateService } from '../certificates/certificate.service';
 import { BadgesService } from '../badges/badges.service';
 import { S3Service } from '../common/s3.service';
+import {mapToInternalException} from '../common/runtime-exception.helper';
 
 @Injectable()
 export class CoursesService {
@@ -292,9 +291,7 @@ export class CoursesService {
       ) {
         throw new NotFoundException('Invalid course ID');
       }
-      throw new InternalServerErrorException(
-        'Failed to retrieve course details',
-      );
+        mapToInternalException(error, 'Failed to retrieve course details');
     }
   }
 
@@ -331,9 +328,7 @@ export class CoursesService {
       ) {
         throw new NotFoundException('Invalid course ID');
       }
-      throw new InternalServerErrorException(
-        'Failed to retrieve course details',
-      );
+        mapToInternalException(error, 'Failed to retrieve course details');
     }
   }
 
@@ -789,9 +784,7 @@ export class CoursesService {
       ) {
         throw new NotFoundException('Invalid course ID');
       }
-      throw new InternalServerErrorException(
-        'Failed to retrieve course details',
-      );
+        mapToInternalException(error, 'Failed to retrieve course details');
     }
   }
 
@@ -1146,7 +1139,10 @@ export class CoursesService {
         where: { quizId, userId },
       });
 
-      const earned = answerSnapshots.reduce((sum, item) => sum + item.scoreAwarded, 0);
+        const earned = answerSnapshots.reduce(
+            (sum, item) => sum + item.scoreAwarded,
+            0,
+        );
       const possible = answerSnapshots.reduce((sum, item) => {
         const question = questionById.get(item.questionId);
         return sum + Number(question?.points || 0);
@@ -1162,7 +1158,8 @@ export class CoursesService {
         scorePercent: Math.round(scorePercent * 100) / 100,
         isPassed: scorePercent >= Number(finalExam.passingScore),
       });
-      const savedQuizAttempt = await this.quizAttemptRepository.save(quizAttempt);
+        const savedQuizAttempt =
+            await this.quizAttemptRepository.save(quizAttempt);
 
       const quizAttemptAnswers = answerSnapshots.map((item) =>
         this.quizAttemptAnswerRepository.create({

@@ -43,7 +43,6 @@ export class OnboardingQuizQuestion {
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
-  
   @OneToMany(() => OnboardingQuizResponse, (response) => response.question)
   responses: OnboardingQuizResponse[];
 }

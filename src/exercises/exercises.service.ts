@@ -200,7 +200,7 @@ export class ExercisesService {
       }
     } catch (error) {
       submission.status = SubmissionStatus.ERRORED;
-      submission.stderr = error.message;
+        submission.stderr = 'Execution failed unexpectedly';
       submission.finishedAt = new Date();
       await this.submissionRepository.save(submission);
     }

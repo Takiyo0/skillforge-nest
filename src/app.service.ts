@@ -19,7 +19,7 @@ export class AppService implements OnModuleInit {
     }
   }
 
-  getHello(): Object {
+  getHello(): object {
     return {
       ok: true,
       message: 'Welcome to the SkillForge API!',

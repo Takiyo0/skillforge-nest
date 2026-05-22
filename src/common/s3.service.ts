@@ -1,11 +1,8 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
+import {Injectable, Logger} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   S3Client,
+    S3ClientConfig,
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
@@ -14,6 +11,10 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuidv4 } from 'uuid';
+import {
+    getErrorMessage,
+    mapToUpstreamException,
+} from './runtime-exception.helper';
 
 @Injectable()
 export class S3Service {
@@ -36,7 +37,7 @@ export class S3Service {
 
     this.bucket = bucket;
 
-    const s3Config: any = {
+      const s3Config: S3ClientConfig = {
       region,
       credentials: {
         accessKeyId,
@@ -72,9 +73,7 @@ export class S3Service {
       await this.s3Client.send(command);
       return key;
     } catch (error) {
-      throw new InternalServerErrorException(
-        `Failed to upload file to S3: ${error.message}`,
-      );
+        mapToUpstreamException(error, 'S3 storage', 'uploading a file');
     }
   }
 
@@ -93,8 +92,10 @@ export class S3Service {
       });
       return signedUrl;
     } catch (error) {
-      throw new InternalServerErrorException(
-        `Failed to generate signed URL: ${error.message}`,
+        mapToUpstreamException(
+            error,
+            'S3 storage',
+            'generating a signed download URL',
       );
     }
   }
@@ -116,8 +117,10 @@ export class S3Service {
       });
       return signedUrl;
     } catch (error) {
-      throw new InternalServerErrorException(
-        `Failed to generate signed upload URL: ${error.message}`,
+        mapToUpstreamException(
+            error,
+            'S3 storage',
+            'generating a signed upload URL',
       );
     }
   }
@@ -131,9 +134,7 @@ export class S3Service {
 
       await this.s3Client.send(command);
     } catch (error) {
-      throw new InternalServerErrorException(
-        `Failed to delete file from S3: ${error.message}`,
-      );
+        mapToUpstreamException(error, 'S3 storage', 'deleting a file');
     }
   }
 
@@ -147,17 +148,19 @@ export class S3Service {
       await this.s3Client.send(command);
       return true;
     } catch (error) {
-      if (error.name === 'NoSuchKey') {
+        if (error instanceof Error && error.name === 'NoSuchKey') {
         return false;
       }
-      throw new InternalServerErrorException(
-        `Failed to check file existence: ${error.message}`,
-      );
+        mapToUpstreamException(error, 'S3 storage', 'checking file existence');
     }
   }
 
   getPublicUrl(key: string): string {
+    const publicEndpoint = this.configService.get<string>('AWS_S3_PUBLIC_URL');
     const endpoint = this.configService.get<string>('AWS_S3_ENDPOINT');
+    if (publicEndpoint) {
+      return `${publicEndpoint}/${key}`;
+    }
     if (endpoint) {
       return `${endpoint}/${this.bucket}/${key}`;
     }
@@ -186,7 +189,7 @@ export class S3Service {
         checks.bucketAccess = true;
         details.push(`✓ Bucket access verified (${this.bucket})`);
       } catch (error) {
-        details.push(`✗ Bucket access failed: ${error.message}`);
+          details.push(`✗ Bucket access failed: ${getErrorMessage(error)}`);
       }
 
       // check 2: Write permission (upload test file)
@@ -213,7 +216,7 @@ export class S3Service {
             checks.readPermission = true;
             details.push(`✓ Read permission verified`);
           } catch (error) {
-            details.push(`✗ Read permission failed: ${error.message}`);
+              details.push(`✗ Read permission failed: ${getErrorMessage(error)}`);
           }
 
           // delete test file
@@ -224,10 +227,12 @@ export class S3Service {
             });
             await this.s3Client.send(deleteCommand);
           } catch (error) {
-            details.push(`⚠ Failed to cleanup test file: ${error.message}`);
+              details.push(
+                  `⚠ Failed to cleanup test file: ${getErrorMessage(error)}`,
+              );
           }
         } catch (error) {
-          details.push(`✗ Write permission failed: ${error.message}`);
+            details.push(`✗ Write permission failed: ${getErrorMessage(error)}`);
         }
       }
 
@@ -242,11 +247,13 @@ export class S3Service {
           checks.listPermission = true;
           details.push(`✓ List permission verified`);
         } catch (error) {
-          details.push(`✗ List permission failed: ${error.message}`);
+            details.push(`✗ List permission failed: ${getErrorMessage(error)}`);
         }
       }
     } catch (error) {
-      details.push(`✗ Unexpected error during health check: ${error.message}`);
+        details.push(
+            `✗ Unexpected error during health check: ${getErrorMessage(error)}`,
+        );
     }
 
     const healthy = Object.values(checks).every((check) => check);

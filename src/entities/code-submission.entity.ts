@@ -110,7 +110,6 @@ export class CodeSubmission {
   @Column({ type: 'timestamptz', nullable: true, name: 'finished_at' })
   finishedAt: Date;
 
-  
   @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })
   user: User;

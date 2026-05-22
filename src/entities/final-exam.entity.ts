@@ -44,7 +44,6 @@ export class FinalExam {
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
-  
   @ManyToOne(() => Unit)
   @JoinColumn({ name: 'unit_id' })
   unit: Unit;

@@ -48,7 +48,6 @@ export class ForumReply {
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
 
-  
   @ManyToOne(() => ForumPost, (post) => post.replies, {
     onDelete: 'CASCADE',
   })

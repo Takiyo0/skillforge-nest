@@ -2,7 +2,6 @@ import {
   Injectable,
   ConflictException,
   UnauthorizedException,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { User } from '../entities/user.entity';
 import { UserRole, UserRoleEnum } from '../entities/user-role.entity';
 import { UserPreference } from '../entities/user-preference.entity';
+import {mapToInternalException} from '../common/runtime-exception.helper';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
@@ -83,7 +83,7 @@ export class AuthService {
         accessToken,
       };
     } catch (error) {
-      throw new InternalServerErrorException('Failed to create user');
+        mapToInternalException(error, 'Failed to create user');
     }
   }
 

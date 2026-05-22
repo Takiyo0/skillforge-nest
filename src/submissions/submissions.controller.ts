@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -25,15 +34,15 @@ export class SubmissionsController {
   async getSandboxLanguages(
     @Query('includeBaseCode') includeBaseCode?: string,
   ) {
-    const include =
-      String(includeBaseCode || '').toLowerCase() === 'true';
+    const include = String(includeBaseCode || '').toLowerCase() === 'true';
     return this.submissionsService.getSandboxLanguages(include);
   }
 
   @Get('unit/:unitId')
   @ApiOperation({
     summary: 'Get all submissions for a unit',
-    description: 'Retrieve all code submissions by the current user for a specific unit/exercise',
+    description:
+        'Retrieve all code submissions by the current user for a specific unit/exercise',
   })
   @ApiParam({
     name: 'unitId',
@@ -65,10 +74,7 @@ export class SubmissionsController {
     @Param('unitId') unitId: string,
     @Req() req: any,
   ) {
-    return this.submissionsService.getUserUnitSubmissions(
-      unitId,
-      req.user.id,
-    );
+    return this.submissionsService.getUserUnitSubmissions(unitId, req.user.id);
   }
 
   @Get(':submissionId')

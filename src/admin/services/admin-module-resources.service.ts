@@ -11,7 +11,7 @@ import {
   CreateModuleResourceDto,
   UpdateModuleResourceDto,
 } from '../dto/create-module-resource.dto';
-import {removeUndefinedProperties} from "../../common/utils/object";
+import {removeUndefinedProperties} from '../../common/utils/object';
 import { ensureOwnerOrAdmin } from '../../common/ownership.helper';
 
 @Injectable()
@@ -44,7 +44,10 @@ export class AdminModuleResourcesService {
     return unit;
   }
 
-  async listByUnit(unitId: string, userOrUserId: any): Promise<ModuleResource[]> {
+    async listByUnit(
+        unitId: string,
+        userOrUserId: any,
+    ): Promise<ModuleResource[]> {
     await this.getOwnedUnit(unitId, userOrUserId);
     return this.moduleResourceRepository.find({
       where: { unitId },

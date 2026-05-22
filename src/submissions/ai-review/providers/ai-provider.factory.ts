@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { AiProvider } from './ai-provider.interface';
 import { OllamaProvider } from './ollama.provider';
 import { GeminiProvider } from './gemini.provider';
+import {ServiceUnavailableException} from '@nestjs/common';
 
 export type AiProviderType = 'ollama' | 'gemini';
 
@@ -24,8 +25,8 @@ export class AiProviderFactory {
       case 'gemini':
         return this.createGeminiProvider();
       default:
-        throw new Error(
-          `Unknown AI provider: ${providerType}. Supported providers: ollama, gemini`,
+          throw new ServiceUnavailableException(
+              `Unknown AI provider: ${String(providerType)}. Supported providers: ollama, gemini`,
         );
     }
   }
@@ -37,14 +38,16 @@ export class AiProviderFactory {
     const model =
       this.configService.get<string>('OLLAMA_MODEL') || 'qwen2.5-coder:7b';
 
-    this.logger.log(`Ollama provider configured: baseUrl=${baseUrl}, model=${model}`);
+      this.logger.log(
+          `Ollama provider configured: baseUrl=${baseUrl}, model=${model}`,
+      );
     return new OllamaProvider(baseUrl, model);
   }
 
   private createGeminiProvider(): AiProvider {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
-      throw new Error(
+        throw new ServiceUnavailableException(
         'GEMINI_API_KEY environment variable is required when using Gemini provider',
       );
     }

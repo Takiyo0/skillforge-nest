@@ -7,9 +7,12 @@ export function ensureOwnerOrAdmin(creatorId: string, userOrId?: any) {
   }
 
   const userId = typeof userOrId === 'string' ? userOrId : userOrId.id;
-  const userRoles: any[] = typeof userOrId === 'object' ? userOrId.roles || [] : [];
+    const userRoles: any[] =
+        typeof userOrId === 'object' ? userOrId.roles || [] : [];
 
-  const isAdmin = userRoles.some((r: any) => r === UserRoleEnum.ADMIN || r.role === UserRoleEnum.ADMIN);
+    const isAdmin = userRoles.some(
+        (r: any) => r === UserRoleEnum.ADMIN || r.role === UserRoleEnum.ADMIN,
+    );
   if (isAdmin) return;
 
   if (!userId || creatorId !== userId) {

@@ -51,7 +51,6 @@ export class ForumModerationAction {
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
-  
   @ManyToOne(() => User, (user) => user.moderationActions, {
     onDelete: 'CASCADE',
   })

@@ -17,7 +17,7 @@ import {
   CreateHintDto,
   UpdateHintDto,
 } from '../dto/create-exercise.dto';
-import {removeUndefinedProperties} from "../../common/utils/object";
+import {removeUndefinedProperties} from '../../common/utils/object';
 import { ensureOwnerOrAdmin } from '../../common/ownership.helper';
 
 @Injectable()
@@ -46,8 +46,6 @@ export class AdminExercisesService {
     if (!unit) {
       throw new NotFoundException('Unit not found');
     }
-
-
 
     ensureOwnerOrAdmin(unit.course.createdBy, userOrUserId);
 
@@ -232,7 +230,10 @@ export class AdminExercisesService {
     await this.hintRepository.remove(hint);
   }
 
-  async getExerciseById(exerciseId: string, userOrUserId?: any): Promise<Exercise> {
+    async getExerciseById(
+        exerciseId: string,
+        userOrUserId?: any,
+    ): Promise<Exercise> {
     const exercise = await this.exerciseRepository.findOne({
       where: { id: exerciseId },
       relations: ['testCases', 'hints'],
@@ -243,7 +244,10 @@ export class AdminExercisesService {
     }
 
     if (userOrUserId) {
-      ensureOwnerOrAdmin((exercise as any).unit?.course?.createdBy, userOrUserId);
+        ensureOwnerOrAdmin(
+            (exercise as any).unit?.course?.createdBy,
+            userOrUserId,
+        );
     }
 
     return exercise;

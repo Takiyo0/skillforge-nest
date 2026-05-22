@@ -45,13 +45,21 @@ export interface BadgeCriteriaDefinition {
 }
 
 export class CreateBadgeDto {
-  @ApiProperty({ description: 'Unique badge code', minLength: 3, maxLength: 80 })
+    @ApiProperty({
+        description: 'Unique badge code',
+        minLength: 3,
+        maxLength: 80,
+    })
   @IsString()
   @MinLength(3)
   @MaxLength(80)
   code: string;
 
-  @ApiProperty({ description: 'Badge display name', minLength: 3, maxLength: 120 })
+    @ApiProperty({
+        description: 'Badge display name',
+        minLength: 3,
+        maxLength: 120,
+    })
   @IsString()
   @MinLength(3)
   @MaxLength(120)
@@ -68,7 +76,10 @@ export class CreateBadgeDto {
   @IsString()
   iconS3Key?: string;
 
-  @ApiProperty({ enum: BadgeCriteriaTypes, description: 'Structured badge criteria type' })
+    @ApiProperty({
+        enum: BadgeCriteriaTypes,
+        description: 'Structured badge criteria type',
+    })
   @IsEnum(BadgeCriteriaTypes)
   criteriaType: BadgeCriteriaType;
 
@@ -77,7 +88,10 @@ export class CreateBadgeDto {
     required: false,
     enum: SUPPORTED_CODE_LANGUAGES,
   })
-  @ValidateIf((dto: CreateBadgeDto) => dto.criteriaType === BadgeCriteriaTypes.FirstCourse)
+  @ValidateIf(
+      (dto: CreateBadgeDto) =>
+          dto.criteriaType === BadgeCriteriaTypes.FirstCourse,
+  )
   @IsString()
   @IsIn(SUPPORTED_CODE_LANGUAGES)
   language?: string;
@@ -87,7 +101,10 @@ export class CreateBadgeDto {
     required: false,
     minimum: 1,
   })
-  @ValidateIf((dto: CreateBadgeDto) => dto.criteriaType === BadgeCriteriaTypes.XpMilestone)
+  @ValidateIf(
+      (dto: CreateBadgeDto) =>
+          dto.criteriaType === BadgeCriteriaTypes.XpMilestone,
+  )
   @IsInt()
   @Min(1)
   @Type(() => Number)
@@ -95,14 +112,24 @@ export class CreateBadgeDto {
 }
 
 export class UpdateBadgeDto {
-  @ApiProperty({ description: 'Badge code', required: false, minLength: 3, maxLength: 80 })
+    @ApiProperty({
+        description: 'Badge code',
+        required: false,
+        minLength: 3,
+        maxLength: 80,
+    })
   @IsOptional()
   @IsString()
   @MinLength(3)
   @MaxLength(80)
   code?: string;
 
-  @ApiProperty({ description: 'Badge display name', required: false, minLength: 3, maxLength: 120 })
+    @ApiProperty({
+        description: 'Badge display name',
+        required: false,
+        minLength: 3,
+        maxLength: 120,
+    })
   @IsOptional()
   @IsString()
   @MinLength(3)
@@ -120,7 +147,11 @@ export class UpdateBadgeDto {
   @IsString()
   iconS3Key?: string;
 
-  @ApiProperty({ enum: BadgeCriteriaTypes, description: 'Structured badge criteria type', required: false })
+    @ApiProperty({
+        enum: BadgeCriteriaTypes,
+        description: 'Structured badge criteria type',
+        required: false,
+    })
   @IsOptional()
   @IsEnum(BadgeCriteriaTypes)
   criteriaType?: BadgeCriteriaType;

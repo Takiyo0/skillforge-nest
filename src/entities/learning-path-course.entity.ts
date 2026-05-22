@@ -13,7 +13,6 @@ export class LearningPathCourse {
   @Column({ type: 'integer' })
   position: number;
 
-  
   @ManyToOne(() => LearningPath, (lp) => lp.courses, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'learning_path_id' })
   learningPath: LearningPath;

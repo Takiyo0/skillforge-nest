@@ -11,7 +11,7 @@ import {
   CreateModuleContentDto,
   UpdateModuleContentDto,
 } from '../dto/create-module-content.dto';
-import {removeUndefinedProperties} from "../../common/utils/object";
+import {removeUndefinedProperties} from '../../common/utils/object';
 import { ensureOwnerOrAdmin } from '../../common/ownership.helper';
 
 @Injectable()
@@ -36,8 +36,6 @@ export class AdminModuleContentService {
     if (!unit) {
       throw new NotFoundException('Unit not found');
     }
-
-
 
     ensureOwnerOrAdmin(unit.course.createdBy, userOrUserId);
 
@@ -98,7 +96,10 @@ export class AdminModuleContentService {
     await this.moduleContentRepository.remove(content);
   }
 
-  async getModuleContentByUnit(unitId: string, userOrUserId?: any): Promise<ModuleContent | null> {
+    async getModuleContentByUnit(
+        unitId: string,
+        userOrUserId?: any,
+    ): Promise<ModuleContent | null> {
     const content = await this.moduleContentRepository.findOne({
       where: { unitId },
       relations: ['unit', 'unit.course'],

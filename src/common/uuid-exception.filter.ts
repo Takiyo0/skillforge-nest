@@ -1,4 +1,9 @@
-import { ExceptionFilter, Catch, ArgumentsHost, BadRequestException } from '@nestjs/common';
+import {
+    ExceptionFilter,
+    Catch,
+    ArgumentsHost,
+    BadRequestException,
+} from '@nestjs/common';
 
 @Catch(BadRequestException)
 export class UuidNotFoundFilter implements ExceptionFilter {
@@ -6,8 +11,11 @@ export class UuidNotFoundFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
     const resBody = exception.getResponse();
-    const message = typeof resBody === 'string' ? resBody : (resBody as any).message;
-    const text = Array.isArray(message) ? message.join(' ') : (message || '').toString();
+      const message =
+          typeof resBody === 'string' ? resBody : (resBody as any).message;
+      const text = Array.isArray(message)
+          ? message.join(' ')
+          : (message || '').toString();
     if (text.toLowerCase().includes('uuid')) {
       response.status(404).json({
         ok: false,

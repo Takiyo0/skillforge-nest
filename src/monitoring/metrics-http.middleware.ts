@@ -23,7 +23,8 @@ export class MetricsHttpMiddleware implements NestMiddleware {
             const route = this.normalizeRoute(req);
             const statusCode = String(res.statusCode);
             const statusClass = `${Math.floor(res.statusCode / 100)}xx`;
-            const elapsedSeconds = Number(process.hrtime.bigint() - startedAt) / 1_000_000_000;
+            const elapsedSeconds =
+                Number(process.hrtime.bigint() - startedAt) / 1_000_000_000;
 
             this.monitoring.httpRequestsTotal.inc({
                 method,
@@ -38,7 +39,10 @@ export class MetricsHttpMiddleware implements NestMiddleware {
 
             const reqSize = this.toNumber(req.headers['content-length']);
             if (reqSize !== undefined) {
-                this.monitoring.httpRequestSizeBytes.observe({method, route}, reqSize);
+                this.monitoring.httpRequestSizeBytes.observe(
+                    {method, route},
+                    reqSize,
+                );
             }
 
             const resSize = this.toNumber(res.getHeader('content-length'));
@@ -50,7 +54,11 @@ export class MetricsHttpMiddleware implements NestMiddleware {
             }
 
             if (res.statusCode >= 400) {
-                this.monitoring.httpErrorsTotal.inc({method, route, status_code: statusCode});
+                this.monitoring.httpErrorsTotal.inc({
+                    method,
+                    route,
+                    status_code: statusCode,
+                });
             }
 
             this.monitoring.httpRequestsInFlight.dec({method, route: initialRoute});
@@ -60,12 +68,17 @@ export class MetricsHttpMiddleware implements NestMiddleware {
     }
 
     private normalizeRoute(req: Request): string {
-        const template = req.baseUrl && req.route?.path ? `${req.baseUrl}${req.route.path}` : req.route?.path;
+        const template =
+            req.baseUrl && req.route?.path
+                ? `${req.baseUrl}${req.route.path}`
+                : req.route?.path;
         if (template) return template;
         return req.path || 'unknown';
     }
 
-    private toNumber(value: string | number | string[] | undefined): number | undefined {
+    private toNumber(
+        value: string | number | string[] | undefined,
+    ): number | undefined {
         if (Array.isArray(value)) return this.toNumber(value[0]);
         if (value == null) return undefined;
         const parsed = Number(value);

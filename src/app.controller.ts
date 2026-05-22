@@ -21,7 +21,7 @@ export class AppController {
       },
     },
   })
-  getHello(): Object {
+  getHello(): object {
     return this.appService.getHello();
   }
 }

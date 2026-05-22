@@ -4,6 +4,11 @@ import {
   AiReviewRequest,
   AiReviewResponse,
 } from './ai-provider.interface';
+import {
+    getErrorMessage,
+    mapToUpstreamException,
+    UpstreamDependencyException,
+} from '../../../common/runtime-exception.helper';
 
 @Injectable()
 export class OllamaProvider implements AiProvider {
@@ -11,7 +16,10 @@ export class OllamaProvider implements AiProvider {
   private readonly baseUrl: string;
   private readonly model: string;
 
-  constructor(baseUrl: string = 'http://localhost:11434', model: string = 'qwen2.5-coder:7b') {
+    constructor(
+        baseUrl: string = 'http://localhost:11434',
+        model: string = 'qwen2.5-coder:7b',
+    ) {
     this.baseUrl = baseUrl;
     this.model = model;
   }
@@ -24,11 +32,15 @@ export class OllamaProvider implements AiProvider {
     try {
       const response = await fetch(`${this.baseUrl}/api/tags`);
       if (!response.ok) {
-        throw new Error(`Ollama service unavailable: ${response.statusText}`);
+          throw new UpstreamDependencyException(
+              'Ollama',
+              'bad_gateway',
+              `Ollama service unavailable: ${response.statusText}`,
+          );
       }
       this.logger.log(`Ollama provider validated at ${this.baseUrl}`);
     } catch (error) {
-      throw new Error(`Failed to validate Ollama provider: ${error.message}`);
+        mapToUpstreamException(error, 'Ollama', 'validating the AI provider');
     }
   }
 
@@ -54,10 +66,14 @@ export class OllamaProvider implements AiProvider {
       });
 
       if (!response.ok) {
-        throw new Error(`Ollama API error: ${response.statusText}`);
+          throw new UpstreamDependencyException(
+              'Ollama',
+              'bad_gateway',
+              `Ollama API error: ${response.statusText}`,
+          );
       }
 
-      const data = await response.json();
+        const data = (await response.json()) as { response?: string };
       const generatedText = data.response || '';
 
       this.logger.log('Ollama response received');
@@ -70,8 +86,8 @@ export class OllamaProvider implements AiProvider {
         model: this.model,
       };
     } catch (error) {
-      this.logger.error(`Ollama API call failed: ${error.message}`);
-      throw new Error(`Failed to call Ollama: ${error.message}`);
+        this.logger.error(`Ollama API call failed: ${getErrorMessage(error)}`);
+        mapToUpstreamException(error, 'Ollama', 'reviewing code');
     }
   }
 
@@ -121,12 +137,26 @@ Respond ONLY with valid JSON, no additional text.`;
         };
       }
 
-      const parsed = JSON.parse(jsonMatch[0]);
+        const parsed = JSON.parse(jsonMatch[0]) as {
+            summary?: unknown;
+            score?: unknown;
+        };
 
-      const summary = String(parsed.summary || '')
+        const summary = (typeof parsed.summary === 'string' ? parsed.summary : '')
         .substring(0, 1000)
         .trim();
-      const score = Math.min(100, Math.max(0, parseInt(parsed.score) || 70));
+        const score = Math.min(
+            100,
+            Math.max(
+                0,
+                parseInt(
+                    typeof parsed.score === 'number' || typeof parsed.score === 'string'
+                        ? String(parsed.score)
+                        : '70',
+                    10,
+                ) || 70,
+            ),
+        );
 
       if (!summary) {
         this.logger.warn('Empty summary in Ollama response, using default');
@@ -138,7 +168,9 @@ Respond ONLY with valid JSON, no additional text.`;
 
       return { summary, score };
     } catch (error) {
-      this.logger.error(`Failed to parse Ollama response: ${error.message}`);
+        this.logger.error(
+            `Failed to parse Ollama response: ${getErrorMessage(error)}`,
+        );
       return {
         summary:
           'Code review completed. Unable to parse detailed feedback. Please try again.',

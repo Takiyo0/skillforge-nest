@@ -11,7 +11,9 @@ export class DbExceptionFilter implements ExceptionFilter {
 
     // PostgreSQL "invalid input syntax for type uuid" error
     if (text.includes('invalid input syntax') && text.includes('uuid')) {
-      response.status(404).json({ ok: false, message: 'Not Found', status: 404 });
+      response
+          .status(404)
+          .json({ok: false, message: 'Not Found', status: 404});
       return;
     }
 

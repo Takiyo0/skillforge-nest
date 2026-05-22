@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  InternalServerErrorException,
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,6 +18,7 @@ import { calculateLevel, getLevelInfo } from '../common/utils/level-calculator';
 import { S3Service } from '../common/s3.service';
 import * as path from 'path';
 import {assertUploadedFileAllowed} from '../common/upload-limits';
+import {mapToInternalException} from '../common/runtime-exception.helper';
 
 @Injectable()
 export class UsersService {
@@ -249,9 +249,7 @@ export class UsersService {
 
         user.avatarS3Key = s3Key;
       } catch (error) {
-        throw new InternalServerErrorException(
-          `Failed to upload avatar: ${error.message}`,
-        );
+        mapToInternalException(error, 'Failed to upload avatar');
       }
     }
 
@@ -265,7 +263,7 @@ export class UsersService {
         bio: updatedUser.bio,
       };
     } catch (error) {
-      throw new InternalServerErrorException('Failed to update profile');
+      mapToInternalException(error, 'Failed to update profile');
     }
   }
 
@@ -299,7 +297,7 @@ export class UsersService {
         updatedAt: updatedPreferences.updatedAt,
       };
     } catch (error) {
-      throw new InternalServerErrorException('Failed to update preferences');
+      mapToInternalException(error, 'Failed to update preferences');
     }
   }
 

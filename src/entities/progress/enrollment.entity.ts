@@ -41,7 +41,6 @@ export class Enrollment {
   @Column({ type: 'timestamptz', nullable: true, name: 'completed_at' })
   completedAt: Date;
 
-  
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;

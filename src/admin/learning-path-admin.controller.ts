@@ -40,7 +40,8 @@ export class LearningPathAdminController {
       'Create a new learning path with courses. Requires admin authentication.',
   })
   @ApiBody({
-    description: 'Learning path details including title, description, and criteria',
+      description:
+          'Learning path details including title, description, and criteria',
     type: CreateLearningPathDto,
   })
   @ApiResponse({
@@ -72,7 +73,8 @@ export class LearningPathAdminController {
   @ApiBearerAuth('access-token')
   @ApiOperation({
     summary: 'List all learning paths',
-    description: 'Retrieve a list of all learning paths. Requires admin authentication.',
+      description:
+          'Retrieve a list of all learning paths. Requires admin authentication.',
   })
   @ApiResponse({
     status: 200,
@@ -241,7 +243,8 @@ export class LearningPathAdminController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Not Found - Learning path or one of the courses does not exist',
+      description:
+          'Not Found - Learning path or one of the courses does not exist',
   })
   @ApiResponse({
     status: 422,
@@ -341,7 +344,8 @@ export class LearningPathAdminController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Not Found - Learning path or one of the courses does not exist',
+      description:
+          'Not Found - Learning path or one of the courses does not exist',
   })
   @ApiResponse({
     status: 422,

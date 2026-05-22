@@ -39,7 +39,6 @@ export class LearningPath {
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
 
-  
   @OneToMany(() => LearningPathCourse, (lpc) => lpc.learningPath)
   courses: LearningPathCourse[];
 }

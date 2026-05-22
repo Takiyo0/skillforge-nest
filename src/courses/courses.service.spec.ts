@@ -192,8 +192,14 @@ describe('CoursesService - Final Exam Completion Scenarios', () => {
           totalUnits: 4,
         });
       unitPrerequisiteRepository.find.mockResolvedValue([]);
-      xpEventRepository.find.mockResolvedValue([{ points: 900 }, { points: 100 }]);
-      courseRepository.findOne.mockResolvedValue({ id: courseId, language: 'go' });
+      xpEventRepository.find.mockResolvedValue([
+        {points: 900},
+        {points: 100},
+      ]);
+      courseRepository.findOne.mockResolvedValue({
+        id: courseId,
+        language: 'go',
+      });
 
       const result = await service.submitFinalExamAttempt(
         userId,

@@ -43,7 +43,6 @@ export class ModuleContent {
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
-  
   @OneToOne(() => Unit, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'unit_id' })
   unit: Unit;

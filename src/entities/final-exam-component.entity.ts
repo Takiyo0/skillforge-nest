@@ -46,7 +46,6 @@ export class FinalExamComponent {
   })
   weight: number;
 
-  
   @ManyToOne(() => FinalExam, (exam) => exam.components)
   @JoinColumn({ name: 'final_exam_unit_id', referencedColumnName: 'unitId' })
   finalExam: FinalExam;

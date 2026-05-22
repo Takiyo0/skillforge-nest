@@ -24,7 +24,6 @@ export class QuizOption {
   @Column({ type: 'int' })
   position: number;
 
-  
   @ManyToOne(() => QuizQuestion, (question) => question.options)
   @JoinColumn({ name: 'question_id' })
   question: QuizQuestion;

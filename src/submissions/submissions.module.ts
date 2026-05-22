@@ -26,7 +26,12 @@ import {
     ]),
   ],
   controllers: [SubmissionsController],
-  providers: [SubmissionsService, PistonService, AiReviewService, AiProviderFactory],
+    providers: [
+        SubmissionsService,
+        PistonService,
+        AiReviewService,
+        AiProviderFactory,
+    ],
   exports: [PistonService, AiReviewService, SubmissionsService],
 })
 export class SubmissionsModule {}

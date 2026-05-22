@@ -367,7 +367,10 @@ export class BadgesService {
   }
 
   private buildCriteria(
-    dto: Pick<CreateBadgeDto | UpdateBadgeDto, 'criteriaType' | 'language' | 'xp'>,
+      dto: Pick<
+          CreateBadgeDto | UpdateBadgeDto,
+          'criteriaType' | 'language' | 'xp'
+      >,
   ): Record<string, any> | undefined {
     if (!dto.criteriaType) {
       return undefined;

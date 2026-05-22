@@ -1,4 +1,8 @@
-import {ConflictException, Injectable, NotFoundException} from '@nestjs/common';
+import {
+    ConflictException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import { IsNull, Not, Repository } from 'typeorm';
 import {
@@ -152,7 +156,9 @@ export class SubmissionsService {
             const visibleTestResults =
                 submission.testResults?.filter((tr) => !tr.testCase?.isHidden) || [];
 
-            const testsPassed = submission.testResults.filter((tr) => tr.passed).length;
+            const testsPassed = submission.testResults.filter(
+                (tr) => tr.passed,
+            ).length;
             const totalTests = submission.testResults.length;
 
             return {
@@ -187,9 +193,13 @@ export class SubmissionsService {
     async askAiCodeExplanation(
         submissionId: string,
         userId: string,
-    ): Promise<{ submissionId: string; aiCodeExplanation: string; alreadyExists: boolean }> {
+    ): Promise<{
+        submissionId: string;
+        aiCodeExplanation: string;
+        alreadyExists: boolean;
+    }> {
         const submission = await this.submissionRepository.findOne({
-            where: { id: submissionId, userId },
+            where: {id: submissionId, userId},
         });
 
         if (!submission) {
@@ -200,14 +210,16 @@ export class SubmissionsService {
             throw new ConflictException('Submission is not linked to an exercise');
         }
 
-        const existingExerciseExplanation = await this.submissionRepository.findOne({
-            where: {
-                userId,
-                exerciseId: submission.exerciseId,
-                aiCodeExplanation: Not(IsNull()),
+        const existingExerciseExplanation = await this.submissionRepository.findOne(
+            {
+                where: {
+                    userId,
+                    exerciseId: submission.exerciseId,
+                    aiCodeExplanation: Not(IsNull()),
+                },
+                order: {queuedAt: 'DESC'},
             },
-            order: { queuedAt: 'DESC' },
-        });
+        );
 
         if (existingExerciseExplanation?.aiCodeExplanation?.trim()) {
             return {
@@ -244,7 +256,9 @@ export class SubmissionsService {
         return SUPPORTED_CODE_LANGUAGES.map((language) => ({
             id: language,
             name: CODE_LANGUAGE_NAMES[language],
-            ...(includeBaseCode ? { baseCode: CODE_LANGUAGE_BASE_CODE[language] } : {}),
+            ...(includeBaseCode
+                ? {baseCode: CODE_LANGUAGE_BASE_CODE[language]}
+                : {}),
         }));
     }
 
@@ -273,7 +287,7 @@ export class SubmissionsService {
 
         const cases = payload.testCases?.length
             ? payload.testCases
-            : [{ input: '', output: undefined }];
+            : [{input: '', output: undefined}];
 
         const results = await Promise.all(
             cases.map(async (testCase, index) => {
@@ -286,7 +300,9 @@ export class SubmissionsService {
                 const actualOutput = (execution.stdout || '').trim();
                 const expectedOutput = testCase.output;
                 const normalizedExpected =
-                    typeof expectedOutput === 'string' ? expectedOutput.trim() : undefined;
+                    typeof expectedOutput === 'string'
+                        ? expectedOutput.trim()
+                        : undefined;
                 const isCorrect =
                     normalizedExpected !== undefined
                         ? actualOutput === normalizedExpected
@@ -301,9 +317,7 @@ export class SubmissionsService {
                     compileOutput: execution.compileOutput || undefined,
                     exitCode: execution.exitCode,
                     isCorrect,
-                    passed:
-                        execution.passed &&
-                        (isCorrect === null ? true : isCorrect),
+                    passed: execution.passed && (isCorrect === null ? true : isCorrect),
                 };
             }),
         );

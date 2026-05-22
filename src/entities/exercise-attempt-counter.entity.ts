@@ -19,7 +19,6 @@ export class ExerciseAttemptCounter {
   @Column({ type: 'timestamptz', nullable: true, name: 'last_passed_at' })
   lastPassedAt: Date;
 
-  
   @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })
   user: User;

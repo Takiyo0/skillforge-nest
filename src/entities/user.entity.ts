@@ -49,7 +49,6 @@ export class User {
   @Column({ type: 'timestamptz', nullable: true, name: 'last_login_at' })
   lastLoginAt: Date;
 
-  
   @OneToMany(() => UserRole, (userRole) => userRole.user, { cascade: true })
   roles: UserRole[];
 

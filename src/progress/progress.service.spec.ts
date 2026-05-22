@@ -84,7 +84,10 @@ describe('ProgressService - Unit-by-Unit Course Flow', () => {
       totalUnits: 4,
     });
     unitPrerequisiteRepository.find.mockResolvedValue([]);
-    xpEventRepository.find.mockResolvedValue([{ points: 200 }, { points: 100 }]);
+    xpEventRepository.find.mockResolvedValue([
+      {points: 200},
+      {points: 100},
+    ]);
 
     const result = await service.completeUnit(userId, unitId);
 
@@ -177,4 +180,3 @@ describe('ProgressService - Unit-by-Unit Course Flow', () => {
     );
   });
 });
-

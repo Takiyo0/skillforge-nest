@@ -17,61 +17,62 @@ import {S3Module} from './common/s3.module';
 import {BadgesModule} from './badges/badges.module';
 import {LearningPathModule} from './learning-paths/learning-path.module';
 import {ForumModule} from './forum/forum.module';
-import {ServeStaticModule} from "@nestjs/serve-static";
+import {ServeStaticModule} from '@nestjs/serve-static';
 import {join} from 'path';
 import { MonitoringModule } from './monitoring/monitoring.module';
 
 @Module({
-    imports: [
-        // global configuration
-        ConfigModule.forRoot({
-            isGlobal: true,
-            envFilePath: '.env',
-        }),
+  imports: [
+    // global configuration
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
 
-        ServeStaticModule.forRoot({
-            rootPath: process.env.NODE_ENV === 'production' ?
-                join(__dirname, 'public') :
-                join(__dirname, '..', '..', 'frontend', 'dist'),
-            exclude: ['/api/*path'],
-        }),
+    ServeStaticModule.forRoot({
+      rootPath:
+          process.env.NODE_ENV === 'production'
+              ? join(__dirname, 'public')
+              : join(__dirname, '..', '..', 'frontend', 'dist'),
+      exclude: ['/api/*path'],
+    }),
 
-        // database configuration
-        TypeOrmModule.forRootAsync({
-            imports: [ConfigModule],
-            useFactory: (configService: ConfigService) => ({
-                type: 'postgres',
-                host: configService.get('DATABASE_HOST'),
-                port: configService.get('DATABASE_PORT'),
-                username: configService.get('DATABASE_USER'),
-                password: configService.get('DATABASE_PASSWORD'),
-                database: configService.get('DATABASE_NAME'),
-                entities: [__dirname + '/**/*.entity{.ts,.js}'],
-                synchronize: false, // Disabled to prevent enum issues; use migrations instead
-                logging: configService.get('NODE_ENV') === 'development',
-            }),
-            inject: [ConfigService],
-        }),
+    // database configuration
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get('DATABASE_HOST'),
+        port: configService.get('DATABASE_PORT'),
+        username: configService.get('DATABASE_USER'),
+        password: configService.get('DATABASE_PASSWORD'),
+        database: configService.get('DATABASE_NAME'),
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        synchronize: false, // Disabled to prevent enum issues; use migrations instead
+        logging: configService.get('NODE_ENV') === 'development',
+      }),
+      inject: [ConfigService],
+    }),
 
-        // feature modules
-        AuthModule,
-        UsersModule,
-        OnboardingModule,
-        CoursesModule,
-        ProgressModule,
-        QuizzesModule,
-        ExercisesModule,
-        SubmissionsModule,
-        AdminModule,
-        CertificateModule,
-        S3Module,
-        BadgesModule,
-        LearningPathModule,
-        ForumModule,
-        MonitoringModule,
-    ],
-    controllers: [AppController],
-    providers: [AppService],
+    // feature modules
+    AuthModule,
+    UsersModule,
+    OnboardingModule,
+    CoursesModule,
+    ProgressModule,
+    QuizzesModule,
+    ExercisesModule,
+    SubmissionsModule,
+    AdminModule,
+    CertificateModule,
+    S3Module,
+    BadgesModule,
+    LearningPathModule,
+    ForumModule,
+    MonitoringModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {
 }

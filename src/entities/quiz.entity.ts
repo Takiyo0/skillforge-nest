@@ -54,7 +54,6 @@ export class Quiz {
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
-  
   @ManyToOne(() => Unit, (unit) => unit.quizzes, { nullable: true })
   @JoinColumn({ name: 'unit_id' })
   unit: Unit;

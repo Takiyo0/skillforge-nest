@@ -1,6 +1,5 @@
 import {
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
   OnModuleInit,
   Inject,
@@ -16,6 +15,7 @@ import {
 import { OnboardingQuizResponse } from '../entities/onboarding/onboarding-quiz-response.entity';
 import { SaveQuizResponsesDto } from './dto/save-quiz-responses.dto';
 import { LearningPathService } from '../learning-paths/learning-path.service';
+import {mapToInternalException} from '../common/runtime-exception.helper';
 
 @Injectable()
 export class OnboardingService implements OnModuleInit {
@@ -173,7 +173,7 @@ export class OnboardingService implements OnModuleInit {
       ) {
         throw new NotFoundException('Invalid question ID');
       }
-      throw new InternalServerErrorException('Failed to save quiz responses');
+        mapToInternalException(error, 'Failed to save quiz responses');
     }
   }
 }

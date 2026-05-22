@@ -28,7 +28,6 @@ export class UserRole {
   @CreateDateColumn({ type: 'timestamptz', name: 'assigned_at' })
   assignedAt: Date;
 
-  
   @ManyToOne(() => User, (user) => user.roles, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;

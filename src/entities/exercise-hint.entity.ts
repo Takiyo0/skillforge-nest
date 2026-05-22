@@ -28,7 +28,6 @@ export class ExerciseHint {
   @Column({ type: 'int' })
   position: number;
 
-  
   @ManyToOne(() => Exercise, (exercise) => exercise.hints)
   @JoinColumn({ name: 'exercise_id' })
   exercise: Exercise;

@@ -5,6 +5,10 @@ import {
   AiReviewRequest,
   AiReviewResponse,
 } from './ai-provider.interface';
+import {
+    getErrorMessage,
+    mapToUpstreamException,
+} from '../../../common/runtime-exception.helper';
 
 @Injectable()
 export class GeminiProvider implements AiProvider {
@@ -27,7 +31,7 @@ export class GeminiProvider implements AiProvider {
       await model.generateContent('ping');
       this.logger.log(`Gemini provider validated with model: ${this.model}`);
     } catch (error) {
-      throw new Error(`Failed to validate Gemini provider: ${error.message}`);
+        mapToUpstreamException(error, 'Gemini', 'validating the AI provider');
     }
   }
 
@@ -65,8 +69,8 @@ export class GeminiProvider implements AiProvider {
         model: this.model,
       };
     } catch (error) {
-      this.logger.error(`Gemini API call failed: ${error.message}`);
-      throw new Error(`Failed to call Gemini: ${error.message}`);
+        this.logger.error(`Gemini API call failed: ${getErrorMessage(error)}`);
+        mapToUpstreamException(error, 'Gemini', 'reviewing code');
     }
   }
 
@@ -116,12 +120,26 @@ Respond ONLY with valid JSON, no additional text.`;
         };
       }
 
-      const parsed = JSON.parse(jsonMatch[0]);
+        const parsed = JSON.parse(jsonMatch[0]) as {
+            summary?: unknown;
+            score?: unknown;
+        };
 
-      const summary = String(parsed.summary || '')
+        const summary = (typeof parsed.summary === 'string' ? parsed.summary : '')
         .substring(0, 1000)
         .trim();
-      const score = Math.min(100, Math.max(0, parseInt(parsed.score) || 70));
+        const score = Math.min(
+            100,
+            Math.max(
+                0,
+                parseInt(
+                    typeof parsed.score === 'number' || typeof parsed.score === 'string'
+                        ? String(parsed.score)
+                        : '70',
+                    10,
+                ) || 70,
+            ),
+        );
 
       if (!summary) {
         this.logger.warn('Empty summary in Gemini response, using default');
@@ -133,7 +151,9 @@ Respond ONLY with valid JSON, no additional text.`;
 
       return { summary, score };
     } catch (error) {
-      this.logger.error(`Failed to parse Gemini response: ${error.message}`);
+        this.logger.error(
+            `Failed to parse Gemini response: ${getErrorMessage(error)}`,
+        );
       return {
         summary:
           'Code review completed. Unable to parse detailed feedback. Please try again.',

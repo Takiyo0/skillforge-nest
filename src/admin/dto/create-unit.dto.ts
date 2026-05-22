@@ -40,7 +40,8 @@ export class CreateUnitDto {
   type: UnitType;
 
   @ApiProperty({
-    description: 'Position of unit (minimum 1). If not provided, will be set to next position automatically',
+      description:
+          'Position of unit (minimum 1). If not provided, will be set to next position automatically',
     minimum: 1,
     required: false,
   })

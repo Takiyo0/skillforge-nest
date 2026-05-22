@@ -2,13 +2,13 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
-import { UserRole, UserRoleEnum } from '../../entities/user-role.entity';
+import {UserRole} from '../../entities/user-role.entity';
 import { UpdateUserRolesDto, ListUsersQueryDto } from '../dto/manage-user.dto';
+import {mapToInternalException} from '../../common/runtime-exception.helper';
 
 @Injectable()
 export class AdminUsersService {
@@ -124,7 +124,7 @@ export class AdminUsersService {
         message: 'User roles updated successfully',
       };
     } catch (error) {
-      throw new InternalServerErrorException('Failed to update user roles');
+        mapToInternalException(error, 'Failed to update user roles');
     }
   }
 
@@ -153,7 +153,7 @@ export class AdminUsersService {
         message: 'User activated successfully',
       };
     } catch (error) {
-      throw new InternalServerErrorException('Failed to activate user');
+        mapToInternalException(error, 'Failed to activate user');
     }
   }
 
@@ -182,7 +182,7 @@ export class AdminUsersService {
         message: 'User deactivated successfully',
       };
     } catch (error) {
-      throw new InternalServerErrorException('Failed to deactivate user');
+        mapToInternalException(error, 'Failed to deactivate user');
     }
   }
 
@@ -205,7 +205,7 @@ export class AdminUsersService {
         deletedUserId: userId,
       };
     } catch (error) {
-      throw new InternalServerErrorException('Failed to delete user');
+        mapToInternalException(error, 'Failed to delete user');
     }
   }
 
@@ -241,7 +241,7 @@ export class AdminUsersService {
         ),
       };
     } catch (error) {
-      throw new InternalServerErrorException('Failed to get user statistics');
+        mapToInternalException(error, 'Failed to get user statistics');
     }
   }
 }

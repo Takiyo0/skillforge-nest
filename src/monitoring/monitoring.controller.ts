@@ -17,7 +17,10 @@ export class MonitoringController {
     }
 
     @Get()
-    @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    @Header(
+        'Cache-Control',
+        'no-store, no-cache, must-revalidate, proxy-revalidate',
+    )
     @Header('Pragma', 'no-cache')
     @Header('Expires', '0')
     async getMetrics(

@@ -34,7 +34,6 @@ export class XpEvent {
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
-  
   @ManyToOne(() => User, (user) => user.xpEvents, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;

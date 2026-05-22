@@ -30,7 +30,6 @@ export class Badge {
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
-  
   @OneToMany(() => UserBadge, (userBadge) => userBadge.badge)
   userBadges: UserBadge[];
 }

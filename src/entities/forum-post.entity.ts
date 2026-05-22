@@ -59,7 +59,6 @@ export class ForumPost {
   })
   lastActivityAt: Date;
 
-  
   @ManyToOne(() => Course, (course) => course.forumPosts, {
     onDelete: 'CASCADE',
   })

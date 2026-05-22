@@ -1,194 +1,210 @@
 import {
-    Injectable,
-    NotFoundException,
-    ConflictException,
-    BadRequestException,
+  Injectable,
+  NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {Repository} from 'typeorm';
-import {Course, CourseLevel} from '../../entities/course/course.entity';
+import {Course} from '../../entities/course/course.entity';
 import {CreateCourseDto, UpdateCourseDto} from '../dto/create-course.dto';
-import {removeUndefinedProperties} from "../../common/utils/object";
+import {removeUndefinedProperties} from '../../common/utils/object';
 import { ensureOwnerOrAdmin } from '../../common/ownership.helper';
 
 @Injectable()
 export class AdminCoursesService {
-    constructor(
-        @InjectRepository(Course)
-        private courseRepository: Repository<Course>,
-    ) {
+  constructor(
+      @InjectRepository(Course)
+      private courseRepository: Repository<Course>,
+  ) {
+  }
+
+  async createCourse(
+      userId: string,
+      createCourseDto: CreateCourseDto,
+  ): Promise<Course> {
+    const slug = this.generateSlug(createCourseDto.title);
+
+    const existingCourse = await this.courseRepository.findOne({
+      where: {slug},
+    });
+
+    if (existingCourse) {
+      throw new ConflictException(`Course with slug "${slug}" already exists`);
     }
 
-    async createCourse(
-        userId: string,
-        createCourseDto: CreateCourseDto,
-    ): Promise<Course> {
-        const slug = this.generateSlug(createCourseDto.title);
+    const course = this.courseRepository.create({
+      ...createCourseDto,
+      slug,
+      createdBy: userId,
+    });
 
-        const existingCourse = await this.courseRepository.findOne({
-            where: {slug},
-        });
+    return await this.courseRepository.save(course);
+  }
 
-        if (existingCourse) {
-            throw new ConflictException(`Course with slug "${slug}" already exists`);
-        }
+  async updateCourse(
+      courseId: string,
+      userOrUserId: any,
+      updateCourseDto: UpdateCourseDto,
+  ): Promise<Course> {
+    const course = await this.courseRepository.findOne({
+      where: {id: courseId},
+    });
 
-        const course = this.courseRepository.create({
-            ...createCourseDto,
-            slug,
-            createdBy: userId,
-        });
-
-        return await this.courseRepository.save(course);
+    if (!course) {
+      throw new NotFoundException('Course not found');
     }
 
-    async updateCourse(
-        courseId: string,
-        userOrUserId: any,
-        updateCourseDto: UpdateCourseDto,
-    ): Promise<Course> {
-        const course = await this.courseRepository.findOne({
-            where: {id: courseId},
-        });
+    ensureOwnerOrAdmin(course.createdBy, userOrUserId);
 
-        if (!course) {
-            throw new NotFoundException('Course not found');
-        }
+    if (updateCourseDto.title && updateCourseDto.title !== course.title) {
+      const newSlug = this.generateSlug(updateCourseDto.title);
+      const existingCourse = await this.courseRepository.findOne({
+        where: {slug: newSlug},
+      });
 
+      if (existingCourse && existingCourse.id !== courseId) {
+        throw new ConflictException(
+            `Course with slug "${newSlug}" already exists`,
+        );
+      }
 
-
-        ensureOwnerOrAdmin(course.createdBy, userOrUserId);
-
-        if (updateCourseDto.title && updateCourseDto.title !== course.title) {
-            const newSlug = this.generateSlug(updateCourseDto.title);
-            const existingCourse = await this.courseRepository.findOne({
-                where: {slug: newSlug},
-            });
-
-            if (existingCourse && existingCourse.id !== courseId) {
-                throw new ConflictException(
-                    `Course with slug "${newSlug}" already exists`,
-                );
-            }
-
-            course.slug = newSlug;
-        }
-
-        Object.assign(course, removeUndefinedProperties(updateCourseDto));
-        await this.courseRepository.save(course);
-        return course;
+      course.slug = newSlug;
     }
 
-    async deleteCourse(courseId: string, userOrUserId: any): Promise<void> {
-        const course = await this.courseRepository.findOne({
-            where: {id: courseId},
-        });
+    Object.assign(course, removeUndefinedProperties(updateCourseDto));
+    await this.courseRepository.save(course);
+    return course;
+  }
 
-        if (!course) {
-            throw new NotFoundException('Course not found');
-        }
+  async deleteCourse(courseId: string, userOrUserId: any): Promise<void> {
+    const course = await this.courseRepository.findOne({
+      where: {id: courseId},
+    });
 
-        ensureOwnerOrAdmin(course.createdBy, userOrUserId);
-
-        await this.courseRepository.remove(course);
+    if (!course) {
+      throw new NotFoundException('Course not found');
     }
 
-    async publishCourse(courseId: string, userOrUserId: any): Promise<Course> {
-        const course = await this.courseRepository.findOne({
-            where: {id: courseId},
-        });
+    ensureOwnerOrAdmin(course.createdBy, userOrUserId);
 
-        if (!course) {
-            throw new NotFoundException('Course not found');
-        }
+    await this.courseRepository.remove(course);
+  }
 
-        ensureOwnerOrAdmin(course.createdBy, userOrUserId);
+  async publishCourse(courseId: string, userOrUserId: any): Promise<Course> {
+    const course = await this.courseRepository.findOne({
+      where: {id: courseId},
+    });
 
-        course.isPublished = true;
-        return await this.courseRepository.save(course);
+    if (!course) {
+      throw new NotFoundException('Course not found');
     }
 
-    async unpublishCourse(courseId: string, userOrUserId: any): Promise<Course> {
-        const course = await this.courseRepository.findOne({
-            where: {id: courseId},
-        });
+    ensureOwnerOrAdmin(course.createdBy, userOrUserId);
 
-        if (!course) {
-            throw new NotFoundException('Course not found');
-        }
+    course.isPublished = true;
+    return await this.courseRepository.save(course);
+  }
 
-        ensureOwnerOrAdmin(course.createdBy, userOrUserId);
+  async unpublishCourse(courseId: string, userOrUserId: any): Promise<Course> {
+    const course = await this.courseRepository.findOne({
+      where: {id: courseId},
+    });
 
-        course.isPublished = false;
-        return await this.courseRepository.save(course);
+    if (!course) {
+      throw new NotFoundException('Course not found');
     }
 
-    async getInstructorCourses(userId: string): Promise<Course[]> {
-        return await this.courseRepository.find({
-            where: {createdBy: userId},
-            relations: ['units', 'creator'],
-            order: {createdAt: 'DESC'},
-        });
+    ensureOwnerOrAdmin(course.createdBy, userOrUserId);
+
+    course.isPublished = false;
+    return await this.courseRepository.save(course);
+  }
+
+  async getInstructorCourses(userId: string): Promise<Course[]> {
+    const courses = await this.courseRepository.find({
+      where: {createdBy: userId},
+      relations: ['units', 'creator'],
+      order: {createdAt: 'DESC'},
+    });
+
+    return courses.map((course) => this.sortCourseUnits(course));
+  }
+
+  async getAllCourses(): Promise<Course[]> {
+    const courses = await this.courseRepository.find({
+      relations: ['units', 'creator'],
+      order: {createdAt: 'DESC'},
+    });
+
+    return courses.map((course) => this.sortCourseUnits(course));
+  }
+
+  async getCourseById(courseId: string, userOrUserId?: any): Promise<any> {
+    const course = await this.courseRepository.findOne({
+      where: {id: courseId},
+      relations: [
+        'units',
+        'creator',
+        'units.prerequisites',
+        'units.prerequisites.prerequisiteUnit',
+        'units.requiredFor',
+        'units.requiredFor.unit',
+      ],
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
     }
 
-    async getAllCourses(): Promise<Course[]> {
-        return await this.courseRepository.find({
-            relations: ['units', 'creator'],
-            order: {createdAt: 'DESC'},
-        });
+    if (userOrUserId) {
+      ensureOwnerOrAdmin(course.createdBy, userOrUserId);
     }
 
-    async getCourseById(courseId: string, userOrUserId?: any): Promise<any> {
-        const course = await this.courseRepository.findOne({
-            where: {id: courseId},
-            relations: [
-                'units',
-                'creator',
-                'units.prerequisites',
-                'units.prerequisites.prerequisiteUnit',
-                'units.requiredFor',
-                'units.requiredFor.unit',
-            ],
-        });
+    const orderedCourse = this.sortCourseUnits(course);
 
-        if (!course) {
-            throw new NotFoundException('Course not found');
-        }
+    return {
+      ...orderedCourse,
+      units: (orderedCourse.units || []).map((unit) => ({
+        id: unit.id,
+        title: unit.title,
+        type: unit.type,
+        position: unit.position,
+        isPublished: unit.isPublished,
+        prerequisites: (unit.prerequisites || [])
+            .map((p: any) => ({
+              id: p.prerequisiteUnit?.id,
+              title: p.prerequisiteUnit?.title,
+              type: p.prerequisiteUnit?.type,
+              position: p.prerequisiteUnit?.position,
+            }))
+            .filter((p: any) => p.id),
+        requiredFor: (unit.requiredFor || [])
+            .map((r: any) => ({
+              id: r.unit?.id,
+              title: r.unit?.title,
+              type: r.unit?.type,
+              position: r.unit?.position,
+            }))
+            .filter((r: any) => r.id),
+      })),
+    };
+  }
 
-        if (userOrUserId) {
-            ensureOwnerOrAdmin(course.createdBy, userOrUserId);
-        }
+  private generateSlug(title: string): string {
+    return title
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+  }
 
-        return {
-            ...course,
-            units: (course.units || []).map((unit) => ({
-                id: unit.id,
-                title: unit.title,
-                type: unit.type,
-                position: unit.position,
-                isPublished: unit.isPublished,
-                prerequisites: (unit.prerequisites || []).map((p: any) => ({
-                    id: p.prerequisiteUnit?.id,
-                    title: p.prerequisiteUnit?.title,
-                    type: p.prerequisiteUnit?.type,
-                    position: p.prerequisiteUnit?.position,
-                })).filter((p: any) => p.id),
-                requiredFor: (unit.requiredFor || []).map((r: any) => ({
-                    id: r.unit?.id,
-                    title: r.unit?.title,
-                    type: r.unit?.type,
-                    position: r.unit?.position,
-                })).filter((r: any) => r.id),
-            })),
-        };
-    }
-
-    private generateSlug(title: string): string {
-        return title
-            .toLowerCase()
-            .trim()
-            .replace(/[^\w\s-]/g, '')
-            .replace(/[\s_]+/g, '-')
-            .replace(/^-+|-+$/g, '');
-    }
+  private sortCourseUnits(course: Course): Course {
+    return {
+      ...course,
+      units: [...(course.units || [])].sort(
+          (a, b) => (a.position ?? 0) - (b.position ?? 0),
+      ),
+    };
+  }
 }

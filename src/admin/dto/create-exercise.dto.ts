@@ -5,7 +5,8 @@ import {
     MinLength,
     MaxLength,
     IsInt,
-    Min, IsBoolean,
+    Min,
+    IsBoolean,
     IsIn,
 } from 'class-validator';
 import {Type} from 'class-transformer';

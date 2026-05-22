@@ -43,7 +43,6 @@ export class QuizQuestion {
   @Column({ type: 'int' })
   position: number;
 
-  
   @ManyToOne(() => Quiz, (quiz) => quiz.questions)
   @JoinColumn({ name: 'quiz_id' })
   quiz: Quiz;

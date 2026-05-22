@@ -1,10 +1,14 @@
-import { NotFoundException } from '@nestjs/common';
+import {BadRequestException, NotFoundException} from '@nestjs/common';
 
 jest.mock('../common/s3.service', () => ({
   S3Service: class S3Service {},
 }));
+jest.mock('../common/upload-limits', () => ({
+  assertUploadedFileAllowed: jest.fn(),
+}));
 
 import { UsersService } from './users.service';
+import {assertUploadedFileAllowed} from '../common/upload-limits';
 
 type RepoMock = {
   findOne: jest.Mock;
@@ -15,7 +19,7 @@ type RepoMock = {
 const createRepoMock = (): RepoMock => ({
   findOne: jest.fn(),
   find: jest.fn(),
-  save: jest.fn(async (payload) => payload),
+  save: jest.fn(<T>(payload: T) => Promise.resolve(payload)),
 });
 
 describe('UsersService - XP and Level Scenarios', () => {
@@ -110,5 +114,31 @@ describe('UsersService - XP and Level Scenarios', () => {
       NotFoundException,
     );
   });
-});
 
+  it('preserves BadRequestException when avatar content is invalid', async () => {
+    const userId = 'user-2';
+    const mockedAssertUploadedFileAllowed =
+        assertUploadedFileAllowed as jest.Mock;
+
+    userRepository.findOne.mockResolvedValue({
+      id: userId,
+      email: 'learner@example.com',
+      displayName: 'Learner',
+      avatarS3Key: null,
+      bio: 'bio',
+    });
+    mockedAssertUploadedFileAllowed.mockRejectedValueOnce(
+        new BadRequestException('Invalid image file content'),
+    );
+
+    await expect(
+        service.updateProfile(userId, {}, {
+          originalname: 'avatar.png',
+          mimetype: 'image/png',
+          buffer: Buffer.from('not-a-real-image'),
+        } as Express.Multer.File),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(s3Service.uploadFile).not.toHaveBeenCalled();
+  });
+});

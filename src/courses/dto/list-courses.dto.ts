@@ -1,4 +1,12 @@
-import {IsOptional, IsEnum, IsString, IsInt, Min, Max, MaxLength} from 'class-validator';
+import {
+    IsOptional,
+    IsEnum,
+    IsString,
+    IsInt,
+    Min,
+    Max,
+    MaxLength,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { CourseLevel } from '../../entities/course/course.entity';

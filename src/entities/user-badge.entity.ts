@@ -19,7 +19,6 @@ export class UserBadge {
   @CreateDateColumn({ type: 'timestamptz', name: 'awarded_at' })
   awardedAt: Date;
 
-  
   @ManyToOne(() => User, (user) => user.userBadges, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;

@@ -23,7 +23,7 @@ import {
   UpdateUnitDto,
   CreateUnitPrerequisiteDto,
 } from '../dto/create-unit.dto';
-import {removeUndefinedProperties} from "../../common/utils/object";
+import {removeUndefinedProperties} from '../../common/utils/object';
 import { ensureOwnerOrAdmin } from '../../common/ownership.helper';
 
 @Injectable()
@@ -73,8 +73,8 @@ export class AdminUnitsService {
     ensureOwnerOrAdmin(course.createdBy, userOrUserId);
 
     let position = createUnitDto.position;
-    
-    // If position is not provided, determine it automatically
+
+      // If position is not provided, determine it automatically
     if (!position) {
       const lastUnit = await this.unitRepository.findOne({
         where: { courseId },

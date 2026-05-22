@@ -48,7 +48,6 @@ export class AiReviewJob {
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
 
-  
   @OneToOne(() => CodeSubmission, (submission) => submission.aiReviewJob)
   @JoinColumn({ name: 'submission_id' })
   submission: CodeSubmission;

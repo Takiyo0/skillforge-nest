@@ -26,9 +26,15 @@ describe('SubmissionsService', () => {
       providers: [
         SubmissionsService,
         { provide: getRepositoryToken(CodeSubmission), useValue: repoMock },
-        { provide: getRepositoryToken(SubmissionTestResult), useValue: repoMock },
+          {
+              provide: getRepositoryToken(SubmissionTestResult),
+              useValue: repoMock,
+          },
         { provide: getRepositoryToken(ExerciseHint), useValue: repoMock },
-        { provide: getRepositoryToken(ExerciseAttemptCounter), useValue: repoMock },
+          {
+              provide: getRepositoryToken(ExerciseAttemptCounter),
+              useValue: repoMock,
+          },
         {
           provide: AiReviewService,
           useValue: {

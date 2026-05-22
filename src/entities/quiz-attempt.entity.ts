@@ -43,7 +43,6 @@ export class QuizAttempt {
   @Column({ type: 'int', name: 'attempt_number' })
   attemptNumber: number;
 
-  
   @ManyToOne(() => Quiz, (quiz) => quiz.attempts)
   @JoinColumn({ name: 'quiz_id' })
   quiz: Quiz;
