@@ -1,10 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import {In, Repository} from 'typeorm';
 import { LearningPath, LearningPathCourse } from '../entities';
 import { UserPreference } from '../entities/user-preference.entity';
 import { Course } from '../entities/course/course.entity';
 import { OnboardingQuizResponse } from '../entities/onboarding/onboarding-quiz-response.entity';
+import {
+    Enrollment,
+    EnrollmentStatus,
+} from '../entities/progress/enrollment.entity';
 
 @Injectable()
 export class LearningPathService {
@@ -19,6 +27,8 @@ export class LearningPathService {
     private courseRepository: Repository<Course>,
     @InjectRepository(OnboardingQuizResponse)
     private responseRepository: Repository<OnboardingQuizResponse>,
+    @InjectRepository(Enrollment)
+    private enrollmentRepository: Repository<Enrollment>,
   ) {}
 
   /**
@@ -69,6 +79,18 @@ export class LearningPathService {
     }
 
     const path = userPref.learningPath;
+      const courseIds = path.courses.map((lpc) => lpc.courseId);
+      const enrollments =
+          courseIds.length > 0
+              ? await this.enrollmentRepository.find({
+                  where: {userId, courseId: In(courseIds)},
+                  relations: ['courseProgress'],
+              })
+              : [];
+      const enrollmentByCourseId = new Map(
+          enrollments.map((enrollment) => [enrollment.courseId, enrollment]),
+      );
+
     return {
       id: path.id,
       slug: path.slug,
@@ -78,6 +100,18 @@ export class LearningPathService {
       courses: path.courses
         .sort((a, b) => a.position - b.position)
         .map((lpc) => ({
+            id: lpc.courseId,
+            title: lpc.course.title,
+            completed: this.isCourseCompleted(
+                enrollmentByCourseId.get(lpc.courseId),
+            ),
+            description: lpc.course.description,
+            language: lpc.course.language,
+            level: lpc.course.level,
+            thumbnailS3Key: lpc.course.thumbnailS3Key,
+            progressPercent: this.getCourseProgressPercent(
+                enrollmentByCourseId.get(lpc.courseId),
+            ),
           courseId: lpc.courseId,
           courseName: lpc.course.title,
           courseSlug: lpc.course.slug,
@@ -183,4 +217,74 @@ export class LearningPathService {
 
     return null;
   }
+
+    async joinPath(userId: string, learningPathId: string) {
+        const learningPath = await this.learningPathRepository.findOne({
+            where: {id: learningPathId, isPublic: true},
+        });
+
+        if (!learningPath) {
+            throw new NotFoundException('Learning path not found');
+        }
+
+        const userPref = await this.userPreferenceRepository.findOne({
+            where: {userId},
+        });
+
+        if (!userPref) {
+            throw new NotFoundException('User preferences not found');
+        }
+
+        if (userPref.learningPathId) {
+            throw new BadRequestException('User is already in a learning path');
+        }
+
+        userPref.learningPathId = learningPath.id;
+        await this.userPreferenceRepository.save(userPref);
+
+        return {
+            message: 'Joined learning path successfully',
+            learningPathId: learningPath.id,
+        };
+    }
+
+    async leavePath(userId: string, learningPathId: string) {
+        const userPref = await this.userPreferenceRepository.findOne({
+            where: {userId},
+        });
+
+        if (!userPref) {
+            throw new NotFoundException('User preferences not found');
+        }
+
+        if (!userPref.learningPathId) {
+            throw new BadRequestException('User is not in any learning path');
+        }
+
+        if (userPref.learningPathId !== learningPathId) {
+            throw new BadRequestException('User is not in this learning path');
+        }
+
+        userPref.learningPathId = null;
+        await this.userPreferenceRepository.save(userPref);
+
+        return {
+            message: 'Left learning path successfully',
+        };
+    }
+
+    private getCourseProgressPercent(enrollment?: Enrollment): number {
+        const progress = enrollment?.courseProgress?.progressPercent;
+        return progress !== undefined && progress !== null ? Number(progress) : 0;
+    }
+
+    private isCourseCompleted(enrollment?: Enrollment): boolean {
+        if (!enrollment) {
+            return false;
+        }
+        if (enrollment.status === EnrollmentStatus.COMPLETED) {
+            return true;
+        }
+        return this.getCourseProgressPercent(enrollment) >= 100;
+    }
 }
