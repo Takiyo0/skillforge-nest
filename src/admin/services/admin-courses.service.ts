@@ -9,6 +9,7 @@ import {Course} from '../../entities/course/course.entity';
 import {CreateCourseDto, UpdateCourseDto} from '../dto/create-course.dto';
 import {removeUndefinedProperties} from '../../common/utils/object';
 import { ensureOwnerOrAdmin } from '../../common/ownership.helper';
+import {UserRoleEnum} from '../../entities';
 
 @Injectable()
 export class AdminCoursesService {
@@ -120,23 +121,27 @@ export class AdminCoursesService {
     return await this.courseRepository.save(course);
   }
 
-  async getInstructorCourses(userId: string): Promise<Course[]> {
+  async getInstructorCourses(userId: string): Promise<any[]> {
     const courses = await this.courseRepository.find({
       where: {createdBy: userId},
       relations: ['units', 'creator'],
       order: {createdAt: 'DESC'},
     });
 
-    return courses.map((course) => this.sortCourseUnits(course));
+    return courses.map((course) =>
+        this.withCreatorView(this.sortCourseUnits(course), false),
+    );
   }
 
-  async getAllCourses(): Promise<Course[]> {
+  async getAllCourses(): Promise<any[]> {
     const courses = await this.courseRepository.find({
       relations: ['units', 'creator'],
       order: {createdAt: 'DESC'},
     });
 
-    return courses.map((course) => this.sortCourseUnits(course));
+    return courses.map((course) =>
+        this.withCreatorView(this.sortCourseUnits(course), true),
+    );
   }
 
   async getCourseById(courseId: string, userOrUserId?: any): Promise<any> {
@@ -160,10 +165,15 @@ export class AdminCoursesService {
       ensureOwnerOrAdmin(course.createdBy, userOrUserId);
     }
 
+    const includeCreatorEmail = this.isAdmin(userOrUserId);
     const orderedCourse = this.sortCourseUnits(course);
+    const courseWithCreator = this.withCreatorView(
+        orderedCourse,
+        includeCreatorEmail,
+    );
 
     return {
-      ...orderedCourse,
+      ...courseWithCreator,
       units: (orderedCourse.units || []).map((unit) => ({
         id: unit.id,
         title: unit.title,
@@ -206,5 +216,50 @@ export class AdminCoursesService {
           (a, b) => (a.position ?? 0) - (b.position ?? 0),
       ),
     };
+  }
+
+  private withCreatorView(course: Course, includeEmail: boolean): any {
+    if (!course.creator) {
+      return course;
+    }
+
+    const creator = includeEmail
+        ? {
+          id: course.creator.id,
+          email: course.creator.email,
+          displayName: course.creator.displayName,
+          avatarS3Key: course.creator.avatarS3Key,
+          bio: course.creator.bio,
+          isActive: course.creator.isActive,
+          createdAt: course.creator.createdAt,
+          updatedAt: course.creator.updatedAt,
+          lastLoginAt: course.creator.lastLoginAt,
+        }
+        : {
+          id: course.creator.id,
+          displayName: course.creator.displayName,
+          avatarS3Key: course.creator.avatarS3Key,
+          bio: course.creator.bio,
+          isActive: course.creator.isActive,
+          createdAt: course.creator.createdAt,
+          updatedAt: course.creator.updatedAt,
+          lastLoginAt: course.creator.lastLoginAt,
+        };
+
+    return {
+      ...course,
+      creator,
+    };
+  }
+
+  private isAdmin(userOrUserId?: any): boolean {
+    if (!userOrUserId || typeof userOrUserId !== 'object') {
+      return false;
+    }
+
+    const roles = userOrUserId.roles || [];
+    return roles.some(
+        (role: any) => role === UserRoleEnum.ADMIN || role.role === UserRoleEnum.ADMIN,
+    );
   }
 }

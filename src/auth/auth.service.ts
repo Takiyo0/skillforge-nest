@@ -76,7 +76,6 @@ export class AuthService {
       return {
         user: {
           id: savedUser.id,
-          email: savedUser.email,
           displayName: savedUser.displayName,
           roles: [UserRoleEnum.LEARNER],
         },
@@ -126,7 +125,6 @@ export class AuthService {
     return {
       user: {
         id: user.id,
-        email: user.email,
         displayName: user.displayName,
         roles,
       },
