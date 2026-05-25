@@ -163,6 +163,7 @@ async function bootstrap() {
     .addTag('Quizzes', 'Quiz management and submissions')
     .addTag('Submissions', 'Exercise and quiz submission details')
     .addTag('Progress', 'Learning progress and streaks')
+      .addTag('Leaderboard', 'Global leaderboard and rankings')
     .addTag('Learning Paths', 'Predefined learning paths')
     .addTag('Certificates', 'Course certificates')
     .addTag('Forum', 'Discussion forum')

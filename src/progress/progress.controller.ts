@@ -233,54 +233,6 @@ export class ProgressController {
     return this.streaksService.getUserStreak(user.id);
   }
 
-  @Get('streaks/leaderboard')
-  @ApiOperation({
-    summary: 'Get streak leaderboard',
-    description:
-      'Retrieve the global leaderboard of users with highest streaks',
-  })
-  @ApiQuery({
-    name: 'limit',
-    description: 'Maximum number of leaderboard entries to return',
-    required: false,
-    type: 'number',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Streak leaderboard retrieved successfully',
-    schema: {
-      example: {
-        leaderboard: [
-          {
-            rank: 1,
-            username: 'Alice',
-            currentStreak: 100,
-            totalXp: 15000,
-          },
-          {
-            rank: 2,
-            username: 'Bob',
-            currentStreak: 85,
-            totalXp: 12500,
-          },
-        ],
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'User not authenticated',
-  })
-  @ApiResponse({
-    status: 422,
-    description: 'Invalid query parameters',
-  })
-  async getStreakLeaderboard(@Query('limit') limit?: string) {
-    return this.streaksService.getStreakLeaderboard(
-      limit ? parseInt(limit) : 10,
-    );
-  }
-
   @Post('me/showcases')
   @ApiOperation({
     summary: 'Create showcase',

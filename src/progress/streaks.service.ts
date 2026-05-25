@@ -196,29 +196,4 @@ export class StreaksService implements OnModuleInit {
       lastActivityDate: streak.lastActivityDate,
     };
   }
-
-  /**
-   * Get global leaderboard (top streaks)
-   */
-  async getStreakLeaderboard(limit: number = 10) {
-    const topStreaks = await this.streakRepository.find({
-      where: { longestStreakDays: MoreThanOrEqual(1) },
-      relations: ['user'],
-      order: { longestStreakDays: 'DESC' },
-      take: limit,
-    });
-
-    return {
-      limit,
-      count: topStreaks.length,
-      leaderboard: topStreaks.map((streak, index) => ({
-        rank: index + 1,
-        userId: streak.userId,
-        userName: streak.user.displayName,
-        longestStreakDays: streak.longestStreakDays,
-        currentStreakDays: streak.currentStreakDays,
-        lastActivityDate: streak.lastActivityDate,
-      })),
-    };
-  }
 }
