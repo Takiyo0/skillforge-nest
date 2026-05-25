@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Not, IsNull, Between } from 'typeorm';
+import {Repository, In, Not, IsNull} from 'typeorm';
 import {Course} from '../entities/course/course.entity';
 import { Unit, UnitType } from '../entities/course/unit.entity';
 import { UnitPrerequisite } from '../entities/course/unit-prerequisite.entity';
@@ -850,17 +850,29 @@ export class CoursesService {
           'You have already passed this exam. No further attempts allowed.',
         );
       }
-      // reuse failed attempt
-      return this.getExamAttemptWithQuestions(
-        userId,
-        unitId,
-        lastSubmittedAttempt.id,
-        lastSubmittedAttempt.attemptNumber,
-        lastSubmittedAttempt.startedAt,
-      );
+
+      if (
+          finalExam.maxAttempts &&
+          submittedAttempts.length >= finalExam.maxAttempts
+      ) {
+        return {
+          locked: true,
+          reason: 'MAX_ATTEMPTS_REACHED',
+          maxAttempts: finalExam.maxAttempts,
+          attemptsUsed: submittedAttempts.length,
+          lastAttempt: {
+            id: lastSubmittedAttempt.id,
+            attemptNumber: lastSubmittedAttempt.attemptNumber,
+            scorePercent: lastSubmittedAttempt.scorePercent,
+            isPassed: lastSubmittedAttempt.isPassed,
+            startedAt: lastSubmittedAttempt.startedAt,
+            submittedAt: lastSubmittedAttempt.submittedAt,
+          },
+        };
+      }
     }
 
-    // no previous attempts
+    // no in-progress attempt and still allowed to start a new attempt
     const previousAttempts = await this.finalExamAttemptRepository.count({
       where: {
         finalExamUnitId: unitId,
@@ -1323,59 +1335,6 @@ export class CoursesService {
       throw new NotFoundException('Final exam attempt not found');
     }
 
-    if (!attempt.isPassed) {
-      throw new BadRequestException(
-        'Review is available only for passed final exam attempts',
-      );
-    }
-
-    const components = await this.finalExamComponentRepository.find({
-      where: { finalExamUnitId: finalExamId },
-      relations: ['quiz'],
-      order: { position: 'ASC' },
-    });
-    const quizIds = components
-      .filter((component) => component.quizId)
-      .map((component) => component.quizId as string);
-
-    const submittedAt = new Date(attempt.submittedAt);
-    const startedAt = new Date(attempt.startedAt);
-    const startedAtWindowStart = new Date(startedAt.getTime() - 5000);
-    const startedAtWindowEnd = new Date(startedAt.getTime() + 5000);
-    const submittedAtWindowStart = new Date(submittedAt.getTime() - 5000);
-    const submittedAtWindowEnd = new Date(submittedAt.getTime() + 5000);
-
-    const quizAttempts = await this.quizAttemptRepository.find({
-      where: {
-        userId,
-        quizId: In(quizIds),
-        startedAt: Between(startedAtWindowStart, startedAtWindowEnd),
-        submittedAt: Between(submittedAtWindowStart, submittedAtWindowEnd),
-      },
-      relations: ['answers', 'answers.question', 'answers.question.options'],
-    });
-
-    const answersByQuestionId = new Map<string, QuizAttemptAnswer>();
-    for (const qa of quizAttempts) {
-      for (const ans of qa.answers || []) {
-        answersByQuestionId.set(ans.questionId, ans);
-      }
-    }
-
-    const questionIds = Array.from(answersByQuestionId.keys());
-    if (questionIds.length === 0) {
-      throw new BadRequestException(
-        'Review data is unavailable for this final exam attempt. Please use a newer attempt.',
-      );
-    }
-    const questions =
-      questionIds.length > 0
-        ? await this.quizQuestionRepository.find({
-            where: { id: In(questionIds) },
-            relations: ['options'],
-          })
-        : [];
-
     return {
       attempt: {
         id: attempt.id,
@@ -1385,28 +1344,7 @@ export class CoursesService {
         startedAt: attempt.startedAt,
         submittedAt: attempt.submittedAt,
       },
-      revealAnswerDetails: true,
-      questions: questions.map((question) => {
-        const answer = answersByQuestionId.get(question.id);
-        return {
-          questionId: question.id,
-          questionType: question.questionType,
-          prompt: question.prompt,
-          points: Number(question.points),
-          selectedOptionIds: answer?.selectedOptionIds || [],
-          isCorrect: answer?.isCorrect ?? false,
-          explanation: question.explanation,
-          correctOptionIds: (question.options || [])
-            .filter((opt) => opt.isCorrect)
-            .map((opt) => opt.id),
-          options: (question.options || [])
-            .sort((a, b) => a.position - b.position)
-            .map((opt) => ({
-              id: opt.id,
-              label: opt.label,
-            })),
-        };
-      }),
+      revealAnswerDetails: false,
     };
   }
 

@@ -13,6 +13,7 @@ import { ModuleContent } from '../entities/course/module-content.entity';
 import { ModuleResource } from '../entities/course/module-resource.entity';
 import {
   FinalExam,
+    FinalExamAttempt,
   FinalExamComponent,
   LearningPath,
   LearningPathCourse,
@@ -51,6 +52,7 @@ import { S3Module } from '../common/s3.module';
       ModuleContent,
       ModuleResource,
       FinalExam,
+        FinalExamAttempt,
       FinalExamComponent,
       LearningPath,
       LearningPathCourse,

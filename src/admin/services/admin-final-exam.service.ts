@@ -17,6 +17,7 @@ import {
   Exercise,
   ExerciseTestCase,
   ExerciseHint,
+    FinalExamAttempt,
 } from '../../entities';
 import {
   CreateExerciseDto,
@@ -46,6 +47,8 @@ export class AdminFinalExamService {
     private testCaseRepository: Repository<ExerciseTestCase>,
     @InjectRepository(ExerciseHint)
     private hintRepository: Repository<ExerciseHint>,
+    @InjectRepository(FinalExamAttempt)
+    private finalExamAttemptRepository: Repository<FinalExamAttempt>,
   ) {}
 
   private async ensureFinalExamInitialized(unitId: string): Promise<FinalExam> {
@@ -585,4 +588,35 @@ export class AdminFinalExamService {
 
     await this.quizQuestionRepository.delete(questionId);
   }
+
+    async resetFinalExamAttempts(
+        unitId: string,
+        targetUserId: string,
+        userOrUserId: any,
+    ): Promise<{ reset: boolean; deletedAttempts: number }> {
+        const unit = await this.unitRepository.findOne({
+            where: {id: unitId},
+            relations: ['course'],
+        });
+
+        if (!unit) {
+            throw new NotFoundException('Unit not found');
+        }
+
+        if (unit.type !== 'final_exam') {
+            throw new BadRequestException('Unit must be of type final_exam');
+        }
+
+        ensureOwnerOrAdmin(unit.course.createdBy, userOrUserId);
+
+        const result = await this.finalExamAttemptRepository.delete({
+            finalExamUnitId: unitId,
+            userId: targetUserId,
+        });
+
+        return {
+            reset: true,
+            deletedAttempts: result.affected || 0,
+        };
+    }
 }

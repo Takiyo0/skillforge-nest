@@ -333,4 +333,85 @@ describe('CoursesService - Final Exam Completion Scenarios', () => {
       expect(certificateService.issueCertificate).not.toHaveBeenCalled();
     });
   });
+
+  describe('Scenario: starting final exam attempts', () => {
+    it('TC-COURSE-POS-START-001 should create a new attempt after previous failed attempt when max is not reached', async () => {
+      const userId = 'user-1';
+      const unitId = 'unit-final';
+      const startedAt = new Date('2026-01-01T00:00:00.000Z');
+
+      unitRepository.findOne.mockResolvedValue({
+        id: unitId,
+        type: UnitType.FINAL_EXAM,
+        isPublished: true,
+      });
+      finalExamRepository.findOne.mockResolvedValue({
+        unitId,
+        maxAttempts: 3,
+      });
+      finalExamAttemptRepository.findOne.mockResolvedValue(null); // no in-progress attempt
+      finalExamAttemptRepository.find.mockResolvedValue([
+        {
+          id: 'attempt-1',
+          attemptNumber: 1,
+          isPassed: false,
+          startedAt,
+          submittedAt: new Date('2026-01-01T00:10:00.000Z'),
+        },
+      ]);
+      finalExamAttemptRepository.count.mockResolvedValue(1);
+      finalExamAttemptRepository.create.mockImplementation((p) => p);
+      finalExamAttemptRepository.save.mockImplementation(async (p) => ({
+        id: 'attempt-2',
+        ...p,
+      }));
+      jest
+          .spyOn(service as any, 'getExamAttemptWithQuestions')
+          .mockResolvedValue({attemptId: 'attempt-2', attemptNumber: 2});
+
+      const result = await service.startFinalExamAttempt(userId, unitId, unitId);
+
+      expect(finalExamAttemptRepository.save).toHaveBeenCalled();
+      expect(result).toEqual({attemptId: 'attempt-2', attemptNumber: 2});
+    });
+
+    it('TC-COURSE-NEG-START-002 should return locked status when max attempts reached', async () => {
+      const userId = 'user-1';
+      const unitId = 'unit-final';
+      const startedAt = new Date('2026-01-01T00:00:00.000Z');
+
+      unitRepository.findOne.mockResolvedValue({
+        id: unitId,
+        type: UnitType.FINAL_EXAM,
+        isPublished: true,
+      });
+      finalExamRepository.findOne.mockResolvedValue({
+        unitId,
+        maxAttempts: 3,
+      });
+      finalExamAttemptRepository.findOne.mockResolvedValue(null); // no in-progress attempt
+      finalExamAttemptRepository.find.mockResolvedValue([
+        {
+          id: 'attempt-3',
+          attemptNumber: 3,
+          isPassed: false,
+          scorePercent: 40,
+          startedAt,
+          submittedAt: new Date('2026-01-01T00:10:00.000Z'),
+        },
+        {id: 'attempt-2', attemptNumber: 2, isPassed: false},
+        {id: 'attempt-1', attemptNumber: 1, isPassed: false},
+      ]);
+
+      const result = await service.startFinalExamAttempt(userId, unitId, unitId);
+
+      expect(result).toMatchObject({
+        locked: true,
+        reason: 'MAX_ATTEMPTS_REACHED',
+        maxAttempts: 3,
+        attemptsUsed: 3,
+      });
+      expect(finalExamAttemptRepository.save).not.toHaveBeenCalled();
+    });
+  });
 });

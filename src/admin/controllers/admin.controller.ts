@@ -2869,6 +2869,64 @@ export class AdminController {
     return this.finalExamService.deleteFinalExamExercise(unitId, user);
   }
 
+  @Post('units/:unitId/final-exam/users/:userId/reset-attempts')
+  @ApiTags('Admin - Final Exams')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Reset final exam attempts for user',
+    description:
+        'Delete all final exam attempts for a specific user in a final-exam unit, allowing a fresh retry.',
+  })
+  @ApiParam({
+    name: 'unitId',
+    type: 'string',
+    required: true,
+    description: 'The unique identifier of the final exam unit',
+  })
+  @ApiParam({
+    name: 'userId',
+    type: 'string',
+    required: true,
+    description: 'The unique identifier of the user to reset',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Final exam attempts reset successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Unit is not a final_exam unit',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token missing or invalid',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - User does not have admin permissions',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Unit not found',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    required: true,
+    description: 'Bearer JWT token',
+  })
+  @Roles(UserRoleEnum.INSTRUCTOR, UserRoleEnum.ADMIN)
+  async resetFinalExamAttempts(
+      @CurrentUser() user: User,
+      @Param('unitId') unitId: string,
+      @Param('userId') targetUserId: string,
+  ) {
+    return this.finalExamService.resetFinalExamAttempts(
+        unitId,
+        targetUserId,
+        user,
+    );
+  }
+
   // ============= BADGES =============
 
   @Get('badges')
